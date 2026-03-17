@@ -1,6 +1,7 @@
 package com.ruralwater.ui;
 
 import com.ruralwater.entity.User;
+import com.ruralwater.service.UserService;
 
 import javax.swing.*;
 import java.awt.*;
