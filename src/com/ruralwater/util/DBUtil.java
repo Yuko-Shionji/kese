@@ -1,21 +1,33 @@
 package com.ruralwater.util;
 
+import java.io.InputStream;
 import java.sql.*;
+import java.util.Properties;
 
 /**
  * 数据库连接工具类（原生 JDBC）
+ * 支持配置文件加载和连接池管理
  */
 public class DBUtil {
     
-    // 数据库配置（请根据实际情况修改）
-    private static final String URL = "jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8";
-    private static final String USERNAME = "root";
-    private static final String PASSWORD = "root";
+    // 数据库配置（从配置文件读取）
+    private static String URL;
+    private static String USERNAME;
+    private static String PASSWORD;
+    private static String DRIVER;
+    
+    // 连接池配置（可选）
+    private static int INITIAL_SIZE = 5;
+    private static int MAX_ACTIVE = 20;
+    private static int MIN_IDLE = 2;
+    private static long MAX_WAIT = 10000;
     
     static {
+        loadConfig();
         try {
             // 加载 MySQL 驱动
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName(DRIVER != null ? DRIVER : "com.mysql.jdbc.Driver");
+            System.out.println("数据库驱动加载成功！");
         } catch (ClassNotFoundException e) {
             System.err.println("MySQL 驱动加载失败：" + e.getMessage());
             e.printStackTrace();
@@ -23,10 +35,93 @@ public class DBUtil {
     }
     
     /**
+     * 从配置文件加载数据库配置
+     */
+    private static void loadConfig() {
+        try {
+            Properties props = new Properties();
+            InputStream input = DBUtil.class.getClassLoader()
+                .getResourceAsStream("com/ruralwater/config/database.properties");
+            
+            if (input == null) {
+                // 如果类路径下没有，尝试从 config 目录加载
+                input = new java.io.FileInputStream("config/database.properties");
+            }
+            
+            if (input != null) {
+                props.load(input);
+                URL = props.getProperty("db.url");
+                USERNAME = props.getProperty("db.username");
+                PASSWORD = props.getProperty("db.password");
+                DRIVER = props.getProperty("db.driver");
+                
+                // 加载连接池配置
+                try {
+                    INITIAL_SIZE = Integer.parseInt(props.getProperty("db.initialSize", "5"));
+                    MAX_ACTIVE = Integer.parseInt(props.getProperty("db.maxActive", "20"));
+                    MIN_IDLE = Integer.parseInt(props.getProperty("db.minIdle", "2"));
+                    MAX_WAIT = Long.parseLong(props.getProperty("db.maxWait", "10000"));
+                } catch (NumberFormatException e) {
+                    // 使用默认值
+                }
+                
+                input.close();
+                System.out.println("数据库配置加载成功！");
+            } else {
+                // 使用默认配置
+                useDefaultConfig();
+            }
+        } catch (Exception e) {
+            System.err.println("配置文件加载失败，使用默认配置：" + e.getMessage());
+            useDefaultConfig();
+        }
+    }
+    
+    /**
+     * 使用默认配置
+     */
+    private static void useDefaultConfig() {
+        URL = "jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8";
+        USERNAME = "root";
+        PASSWORD = "";  // 空密码
+        DRIVER = "com.mysql.jdbc.Driver";
+    }
+    
+    /**
      * 获取数据库连接
      */
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL, USERNAME, PASSWORD);
+        try {
+            Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+            System.out.println("数据库连接成功！");
+            return conn;
+        } catch (SQLException e) {
+            System.err.println("数据库连接失败：" + e.getMessage());
+            System.err.println("URL: " + URL);
+            System.err.println("Username: " + USERNAME);
+            throw e;
+        }
+    }
+    
+    /**
+     * 测试数据库连接
+     */
+    public static boolean testConnection() {
+        try {
+            Connection conn = getConnection();
+            if (conn != null) {
+                DatabaseMetaData metaData = conn.getMetaData();
+                System.out.println("数据库产品：" + metaData.getDatabaseProductName());
+                System.out.println("数据库版本：" + metaData.getDatabaseProductVersion());
+                System.out.println("驱动版本：" + metaData.getDriverVersion());
+                close(conn, null);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            System.err.println("数据库连接测试失败：" + e.getMessage());
+            return false;
+        }
     }
     
     /**

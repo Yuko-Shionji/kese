@@ -2,6 +2,7 @@ package com.ruralwater.ui;
 
 import com.ruralwater.entity.User;
 import com.ruralwater.entity.Warning;
+import com.ruralwater.service.WarningService;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -22,6 +23,8 @@ public class WarningPanel extends JPanel {
     private JButton searchButton;
     private JButton handleButton;
     private JButton refreshButton;
+    
+    private WarningService warningService = new WarningService();
     
     public WarningPanel(User user) {
         this.currentUser = user;
@@ -116,24 +119,16 @@ public class WarningPanel extends JPanel {
      * 加载数据
      */
     private void loadData() {
-        // TODO: 从数据库加载真实数据
-        List<Warning> warnings = new ArrayList<>();
-        
-        // 模拟测试数据
-        for (int i = 1; i <= 10; i++) {
-            Warning w = new Warning();
-            w.setWarningId(i);
-            w.setPlantName("合肥" + i + "水厂");
-            w.setWarningType("quality");
-            w.setWarningLevel(i % 2 == 0 ? "high" : "medium");
-            w.setTitle("水质检测异常 - 浊度超标");
-            w.setContent("检测项浊度不合格，测量值：" + (1.0 + i * 0.1));
-            w.setStatus(i % 3 == 0 ? "processed" : "active");
-            w.setCreateTime("2026-03-" + (i < 10 ? "0" + i : i));
-            warnings.add(w);
+        try {
+            List<Warning> warnings = warningService.getWarningsByCondition(
+                null, null, null, null, 1, 100);
+            updateTable(warnings);
+            int count = warnings.size();
+            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("加载完成，共 " + count + " 条预警信息");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "加载数据失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
-        
-        updateTable(warnings);
     }
     
     /**
@@ -188,7 +183,29 @@ public class WarningPanel extends JPanel {
     }
     
     private void doSearch() {
-        JOptionPane.showMessageDialog(this, "查询功能开发中...", "提示", JOptionPane.INFORMATION_MESSAGE);
+        try {
+            String warningType = null;
+            String selectedLevel = (String) levelCombo.getSelectedItem();
+            String warningLevel = null;
+            if (!"全部".equals(selectedLevel)) {
+                warningLevel = selectedLevel;
+            }
+            
+            String selectedStatus = (String) statusCombo.getSelectedItem();
+            String status = null;
+            if (!"全部".equals(selectedStatus)) {
+                status = selectedStatus;
+            }
+            
+            List<Warning> warnings = warningService.getWarningsByCondition(
+                warningType, warningLevel, status, null, 1, 100);
+            updateTable(warnings);
+            
+            int count = warnings.size();
+            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("查询完成，共找到 " + count + " 条预警");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "查询失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
     }
     
     private void doHandle() {
@@ -198,6 +215,96 @@ public class WarningPanel extends JPanel {
             return;
         }
         
-        JOptionPane.showMessageDialog(this, "处理功能开发中...", "提示", JOptionPane.INFORMATION_MESSAGE);
+        Integer warningId = (Integer) tableModel.getValueAt(selectedRow, 0);
+        String status = (String) tableModel.getValueAt(selectedRow, 6);
+        
+        if ("已处理".equals(status) || "已忽略".equals(status)) {
+            JOptionPane.showMessageDialog(this, "该预警已处理过，无需重复处理", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        HandleWarningDialog dialog = new HandleWarningDialog((Frame) SwingUtilities.getWindowAncestor(this), 
+                                                              warningId, currentUser);
+        dialog.setVisible(true);
+        
+        if (dialog.isHandled()) {
+            JOptionPane.showMessageDialog(this, "处理成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+            loadData();
+            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("处理了预警信息 #" + warningId);
+        }
+    }
+}
+
+/**
+ * 处理预警对话框
+ */
+class HandleWarningDialog extends JDialog {
+    private boolean handled = false;
+    
+    public HandleWarningDialog(Frame owner, Integer warningId, User currentUser) {
+        super(owner, "处理预警 #" + warningId, true);
+        initUI(warningId, currentUser);
+    }
+    
+    private void initUI(Integer warningId, User currentUser) {
+        setSize(500, 350);
+        setLocationRelativeTo(getOwner());
+        setLayout(new BorderLayout());
+        
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        gbc.gridx = 0; gbc.gridy = 0;
+        panel.add(new JLabel("处理结果："), gbc);
+        
+        JComboBox<String> statusCombo = new JComboBox<>();
+        statusCombo.addItem("processed");
+        statusCombo.addItem("ignored");
+        gbc.gridx = 1; gbc.gridy = 0;
+        panel.add(statusCombo, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 1;
+        panel.add(new JLabel("处理意见："), gbc);
+        
+        JTextArea opinionArea = new JTextArea(8, 25);
+        JScrollPane scrollPane = new JScrollPane(opinionArea);
+        gbc.gridx = 1; gbc.gridy = 1;
+        panel.add(scrollPane, gbc);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton confirmBtn = new JButton("确定");
+        confirmBtn.addActionListener(e -> {
+            try {
+                String status = (String) statusCombo.getSelectedItem();
+                String opinion = opinionArea.getText().trim();
+                
+                if (opinion.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "请输入处理意见", "提示", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                WarningService warningService = new WarningService();
+                warningService.handleWarning(warningId, currentUser.getUserId(), opinion, status);
+                
+                handled = true;
+                dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "处理失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonPanel.add(confirmBtn);
+        
+        JButton cancelBtn = new JButton("取消");
+        cancelBtn.addActionListener(e -> dispose());
+        buttonPanel.add(cancelBtn);
+        
+        add(panel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    public boolean isHandled() {
+        return handled;
     }
 }

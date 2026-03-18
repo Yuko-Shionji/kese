@@ -71,4 +71,41 @@ public class UserService {
         
         userDAO.insert(user);
     }
+    
+    /**
+     * 获取所有用户列表
+     */
+    public java.util.List<User> getAllUsers() throws Exception {
+        return userDAO.findAll();
+    }
+    
+    /**
+     * 根据 ID 获取用户
+     */
+    public User getUserById(Integer userId) throws Exception {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("用户 ID 无效");
+        }
+        return userDAO.findById(userId);
+    }
+    
+    /**
+     * 更新用户信息
+     */
+    public void updateUser(User user) throws Exception {
+        if (user == null || user.getUserId() == null || user.getUserId() <= 0) {
+            throw new IllegalArgumentException("用户信息无效");
+        }
+        userDAO.update(user);
+    }
+    
+    /**
+     * 删除用户
+     */
+    public void deleteUser(Integer userId) throws Exception {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("用户 ID 无效");
+        }
+        userDAO.delete(userId);
+    }
 }

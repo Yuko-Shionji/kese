@@ -20,6 +20,10 @@ public class WaterQualityDetail implements Serializable {
     private String itemName;
     private String unit;
     private String itemCode;
+    private BigDecimal standardValue;
+    private BigDecimal minValue;
+    private BigDecimal maxValue;
+    private String category;
     
     public WaterQualityDetail() {}
     
@@ -56,6 +60,18 @@ public class WaterQualityDetail implements Serializable {
     
     public String getItemCode() { return itemCode; }
     public void setItemCode(String itemCode) { this.itemCode = itemCode; }
+    
+    public BigDecimal getStandardValue() { return standardValue; }
+    public void setStandardValue(BigDecimal standardValue) { this.standardValue = standardValue; }
+    
+    public BigDecimal getMinValue() { return minValue; }
+    public void setMinValue(BigDecimal minValue) { this.minValue = minValue; }
+    
+    public BigDecimal getMaxValue() { return maxValue; }
+    public void setMaxValue(BigDecimal maxValue) { this.maxValue = maxValue; }
+    
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
     
     @Override
     public String toString() {

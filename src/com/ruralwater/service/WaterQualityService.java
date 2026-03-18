@@ -4,14 +4,19 @@ import com.ruralwater.dao.WaterQualityRecordDAO;
 import com.ruralwater.entity.WaterQualityDetail;
 import com.ruralwater.entity.WaterQualityRecord;
 
+import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 水质检测记录服务层（业务逻辑层）
+ * 增强版：添加统计分析和数据验证功能
  */
 public class WaterQualityService {
     
     private WaterQualityRecordDAO recordDAO = new WaterQualityRecordDAO();
+    private WaterQualityDetailService detailService = new WaterQualityDetailService();
     
     /**
      * 分页查询检测记录（支持多条件）
@@ -27,6 +32,26 @@ public class WaterQualityService {
         }
         
         return recordDAO.findByCondition(plantId, startDate, endDate, conclusion, pageNum, pageSize);
+    }
+    
+    /**
+     * 获取检测记录详情（包含检测项详情）
+     */
+    public Map<String, Object> getRecordWithDetails(Integer recordId) throws Exception {
+        if (recordId == null || recordId <= 0) {
+            throw new IllegalArgumentException("记录 ID 无效");
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        WaterQualityRecord record = recordDAO.findById(recordId);
+        List<WaterQualityDetail> details = detailService.getDetailsByRecordId(recordId);
+        
+        result.put("record", record);
+        result.put("details", details);
+        result.put("qualifiedCount", detailService.countQualifiedItems(recordId));
+        result.put("unqualifiedCount", detailService.countUnqualifiedItems(recordId));
+        
+        return result;
     }
     
     /**
@@ -54,12 +79,50 @@ public class WaterQualityService {
             throw new IllegalArgumentException("检测详情不能为空");
         }
         
-        // 实际项目中应该使用事务处理，同时插入记录和详情
-        
-        recordDAO.insert(record);
-        
-        // TODO: 插入检测详情
-        // detailDAO.insert(detail);
+        // 开启事务处理
+        java.sql.Connection conn = null;
+        try {
+            conn = com.ruralwater.util.DBUtil.getConnection();
+            com.ruralwater.util.DBUtil.beginTransaction(conn);
+            
+            // 插入主记录
+            int recordResult = recordDAO.insertWithConnection(record, conn);
+            
+            // 获取生成的记录 ID
+            java.sql.Statement stmt = conn.createStatement();
+            java.sql.ResultSet rs = stmt.executeQuery("SELECT LAST_INSERT_ID()");
+            Integer recordId = null;
+            if (rs.next()) {
+                recordId = rs.getInt(1);
+            }
+            rs.close();
+            stmt.close();
+            
+            if (recordId != null) {
+                // 为所有详情设置记录 ID
+                for (WaterQualityDetail detail : details) {
+                    detail.setRecordId(recordId);
+                }
+                
+                // 批量插入详情
+                detailService.addDetails(details);
+            }
+            
+            // 提交事务
+            com.ruralwater.util.DBUtil.commit(conn);
+        } catch (Exception e) {
+            // 回滚事务
+            if (conn != null) {
+                com.ruralwater.util.DBUtil.rollback(conn);
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (Exception e) {}
+            }
+        }
     }
     
     /**
@@ -84,5 +147,51 @@ public class WaterQualityService {
      */
     public int getCountByCondition(Integer plantId, String startDate, String endDate, String conclusion) throws Exception {
         return recordDAO.getCountByCondition(plantId, startDate, endDate, conclusion);
+    }
+    
+    /**
+     * 统计检测记录总数
+     */
+    public int getTotalCount() throws Exception {
+        return recordDAO.getCount();
+    }
+    
+    /**
+     * 统计分析：计算合格率
+     */
+    public Map<String, Object> calculatePassRate(Integer plantId, String startDate, String endDate) throws Exception {
+        Map<String, Object> result = new HashMap<>();
+        
+        List<WaterQualityRecord> records = getRecordsByCondition(plantId, startDate, endDate, null, 1, 1000);
+        
+        int totalRecords = records.size();
+        int qualifiedCount = 0;
+        int unqualifiedCount = 0;
+        
+        for (WaterQualityRecord record : records) {
+            if ("qualified".equals(record.getConclusion())) {
+                qualifiedCount++;
+            } else if ("unqualified".equals(record.getConclusion())) {
+                unqualifiedCount++;
+            }
+        }
+        
+        BigDecimal passRate = totalRecords > 0 ? 
+            new BigDecimal(qualifiedCount).multiply(new BigDecimal("100"))
+                .divide(new BigDecimal(totalRecords), 2, BigDecimal.ROUND_HALF_UP) : BigDecimal.ZERO;
+        
+        result.put("totalRecords", totalRecords);
+        result.put("qualifiedCount", qualifiedCount);
+        result.put("unqualifiedCount", unqualifiedCount);
+        result.put("passRate", passRate.setScale(2, BigDecimal.ROUND_HALF_UP));
+        
+        return result;
+    }
+    
+    /**
+     * 获取最近检测记录（最新 N 条）
+     */
+    public List<WaterQualityRecord> getRecentRecords(int count) throws Exception {
+        return recordDAO.findByPage(1, count);
     }
 }

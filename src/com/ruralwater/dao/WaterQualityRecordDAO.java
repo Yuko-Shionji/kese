@@ -198,6 +198,29 @@ public class WaterQualityRecordDAO implements BaseDAO<WaterQualityRecord> {
         }
     }
     
+    /**
+     * 在指定连接中插入记录（用于事务处理）
+     */
+    public int insertWithConnection(WaterQualityRecord record, Connection conn) throws Exception {
+        String sql = "INSERT INTO water_quality_records(plant_id, sample_point, sample_time, " +
+                     "tester_id, review_status, conclusion, remark) VALUES(?, ?, ?, ?, 'pending', ?, ?)";
+        PreparedStatement pstmt = null;
+        
+        try {
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, record.getPlantId());
+            pstmt.setString(2, record.getSamplePoint());
+            pstmt.setString(3, record.getSampleTime());
+            pstmt.setInt(4, record.getTesterId());
+            pstmt.setString(5, record.getConclusion());
+            pstmt.setString(6, record.getRemark());
+            
+            return pstmt.executeUpdate();
+        } finally {
+            if (pstmt != null) pstmt.close();
+        }
+    }
+    
     @Override
     public int update(WaterQualityRecord record) throws Exception {
         String sql = "UPDATE water_quality_records SET plant_id=?, sample_point=?, " +

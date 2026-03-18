@@ -1,12 +1,15 @@
 package com.ruralwater.ui;
 
 import com.ruralwater.entity.User;
-import com.ruralwater.service.UserService;
+import com.ruralwater.entity.WaterQualityRecord;
+import com.ruralwater.service.*;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.List;
 
 /**
  * 系统主界面
@@ -126,6 +129,10 @@ public class MainFrame extends JFrame {
      * 添加功能标签页
      */
     private void addFunctionTabs() {
+        // 首页仪表板
+        JPanel dashboardPanel = createDashboardPanel();
+        tabbedPane.addTab("首页", dashboardPanel);
+        
         // 水厂管理
         WaterPlantPanel plantPanel = new WaterPlantPanel(currentUser);
         tabbedPane.addTab("水厂管理", plantPanel);
@@ -224,8 +231,213 @@ public class MainFrame extends JFrame {
      */
     private void showAboutDialog() {
         JOptionPane.showMessageDialog(this, 
-            "农村饮水安全监测管理系统\n版本：v1.0\n\n技术栈：JavaSE + Swing + JDBC + MySQL\n\nCopyright © 2026", 
+            "农村饮水安全监测管理系统\n版本：v1.0\n\n技术栈：JavaSE + Swing + JDBC + MySQL\n\n功能模块：\n• 首页仪表板 - 数据统计与可视化\n• 水厂管理 - 水厂信息维护\n• 水质检测 - 检测记录与审核\n• 预警信息 - 异常自动预警\n• 系统管理 - 用户与日志管理\n\nCopyright © 2026", 
             "关于系统", JOptionPane.INFORMATION_MESSAGE);
+    }
+    
+    /**
+     * 创建首页仪表板面板
+     */
+    private JPanel createDashboardPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        
+        // 顶部统计卡片区域
+        JPanel statsPanel = createStatsCardsPanel();
+        panel.add(statsPanel, BorderLayout.NORTH);
+        
+        // 中间图表区域
+        JPanel chartsPanel = createChartsPanel();
+        panel.add(chartsPanel, BorderLayout.CENTER);
+        
+        return panel;
+    }
+    
+    /**
+     * 创建统计卡片区
+     */
+    private JPanel createStatsCardsPanel() {
+        JPanel panel = new JPanel(new GridLayout(1, 4, 10, 10));
+        panel.setPreferredSize(new Dimension(panel.getPreferredSize().width, 120));
+        
+        try {
+            // 水厂数量
+            WaterPlantService plantService = new WaterPlantService();
+            int plantCount = plantService.getTotalCount();
+            panel.add(createStatCard("水厂总数", String.valueOf(plantCount), new Color(41, 128, 185)));
+            
+            // 检测记录数
+            WaterQualityService qualityService = new WaterQualityService();
+            int recordCount = qualityService.getTotalCount();
+            panel.add(createStatCard("检测记录", String.valueOf(recordCount), new Color(46, 204, 113)));
+            
+            // 预警信息数
+            WarningService warningService = new WarningService();
+            int warningCount = warningService.getActiveWarnings();
+            panel.add(createStatCard("待处理预警", String.valueOf(warningCount), new Color(231, 76, 60)));
+            
+            // 设备总数
+            EquipmentService equipmentService = new EquipmentService();
+            int equipmentCount = equipmentService.getTotalCount();
+            panel.add(createStatCard("设备总数", String.valueOf(equipmentCount), new Color(241, 196, 15)));
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 如果加载失败，显示默认值
+            for (int i = 0; i < 4; i++) {
+                panel.add(createStatCard("统计项", "-", Color.GRAY));
+            }
+        }
+        
+        return panel;
+    }
+    
+    /**
+     * 创建统计卡片
+     */
+    private JPanel createStatCard(String title, String value, Color color) {
+        JPanel card = new JPanel(new BorderLayout(5, 5));
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(color, 2),
+            BorderFactory.createEmptyBorder(15, 20, 15, 20)
+        ));
+        card.setBackground(color.brighter());
+        
+        JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
+        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 14));
+        titleLabel.setForeground(color.darker());
+        
+        JLabel valueLabel = new JLabel(value, SwingConstants.CENTER);
+        valueLabel.setFont(new Font("微软雅黑", Font.BOLD, 28));
+        valueLabel.setForeground(color.darker());
+        
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(valueLabel, BorderLayout.CENTER);
+        
+        return card;
+    }
+    
+    /**
+     * 创建图表区域
+     */
+    private JPanel createChartsPanel() {
+        JPanel panel = new JPanel(new GridLayout(1, 2, 10, 10));
+        
+        // 左侧：最近检测记录
+        panel.add(createRecentRecordsPanel());
+        
+        // 右侧：系统信息
+        panel.add(createSystemInfoPanel());
+        
+        return panel;
+    }
+    
+    /**
+     * 创建最近检测记录面板
+     */
+    private JScrollPane createRecentRecordsPanel() {
+        String[] columnNames = {"ID", "水厂", "采样时间", "结论"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
+        JTable table = new JTable(tableModel);
+        table.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        table.setRowHeight(28);
+        
+        try {
+            WaterQualityService qualityService = new WaterQualityService();
+            List<WaterQualityRecord> records = qualityService.getRecentRecords(10);
+            
+            for (WaterQualityRecord record : records) {
+                Object[] row = {
+                    record.getRecordId(),
+                    record.getPlantName() != null ? record.getPlantName() : "-",
+                    record.getSampleTime() != null ? record.getSampleTime().substring(0, 10) : "-",
+                    "qualified".equals(record.getConclusion()) ? "合格" : "不合格"
+                };
+                tableModel.addRow(row);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.setBorder(BorderFactory.createTitledBorder("最近检测记录"));
+        
+        return scrollPane;
+    }
+    
+    /**
+     * 创建系统信息面板
+     */
+    private JPanel createSystemInfoPanel() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+        
+        int row = 0;
+        
+        // 当前用户
+        gbc.gridx = 0; gbc.gridy = row++;
+        panel.add(createInfoLabel("当前用户:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row;
+        panel.add(createInfoValue(currentUser.getRealName()), gbc);
+        
+        // 角色
+        gbc.gridx = 0; gbc.gridy = ++row;
+        panel.add(createInfoLabel("角色:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row;
+        panel.add(createInfoValue(getRoleName(currentUser.getRole())), gbc);
+        
+        // 登录时间
+        gbc.gridx = 0; gbc.gridy = ++row;
+        panel.add(createInfoLabel("登录时间:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row;
+        panel.add(createInfoValue(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date())), gbc);
+        
+        // 系统运行时间
+        gbc.gridx = 0; gbc.gridy = ++row;
+        panel.add(createInfoLabel("系统运行时间:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row;
+        panel.add(createInfoValue(getUptime()), gbc);
+        
+        // 数据库连接状态
+        gbc.gridx = 0; gbc.gridy = ++row;
+        panel.add(createInfoLabel("数据库状态:"), gbc);
+        gbc.gridx = 1; gbc.gridy = row;
+        boolean connected = com.ruralwater.util.DBUtil.testConnection();
+        JLabel statusLabel = createInfoValue(connected ? "已连接" : "未连接");
+        statusLabel.setForeground(connected ? new Color(39, 174, 96) : Color.RED);
+        panel.add(statusLabel, gbc);
+        
+        panel.setBorder(BorderFactory.createTitledBorder("系统信息"));
+        
+        return panel;
+    }
+    
+    private JLabel createInfoLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("微软雅黑", Font.BOLD, 13));
+        return label;
+    }
+    
+    private JLabel createInfoValue(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        return label;
+    }
+    
+    private String getUptime() {
+        long uptime = java.lang.management.ManagementFactory.getRuntimeMXBean().getUptime();
+        long hours = uptime / (1000 * 60 * 60);
+        long minutes = (uptime % (1000 * 60 * 60)) / (1000 * 60);
+        return hours + "小时 " + minutes + "分钟";
     }
     
     /**
