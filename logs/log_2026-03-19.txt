@@ -56,3 +56,80 @@ Username: root
 	at com.ruralwater.OptimizationTest.testDBConnection(OptimizationTest.java:44)
 	at com.ruralwater.OptimizationTest.main(OptimizationTest.java:18)
 
+[2026-03-19 15:50:41] [ERROR] MySQL 驱动加载失败：com.mysql.jdbc.Driver
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:375)
+	at com.ruralwater.util.DBUtil.<clinit>(DBUtil.java:30)
+	at com.ruralwater.dao.UserDAO.login(UserDAO.java:25)
+	at com.ruralwater.service.UserService.login(UserService.java:33)
+	at com.ruralwater.ui.LoginFrame.doLogin(LoginFrame.java:161)
+	at com.ruralwater.ui.LoginFrame$1.actionPerformed(LoginFrame.java:124)
+	at java.desktop/javax.swing.AbstractButton.fireActionPerformed(AbstractButton.java:1972)
+	at java.desktop/javax.swing.AbstractButton$Handler.actionPerformed(AbstractButton.java:2313)
+	at java.desktop/javax.swing.DefaultButtonModel.fireActionPerformed(DefaultButtonModel.java:405)
+	at java.desktop/javax.swing.DefaultButtonModel.setPressed(DefaultButtonModel.java:262)
+	at java.desktop/javax.swing.plaf.basic.BasicButtonListener.mouseReleased(BasicButtonListener.java:279)
+	at java.desktop/java.awt.Component.processMouseEvent(Component.java:6626)
+	at java.desktop/javax.swing.JComponent.processMouseEvent(JComponent.java:3389)
+	at java.desktop/java.awt.Component.processEvent(Component.java:6391)
+	at java.desktop/java.awt.Container.processEvent(Container.java:2266)
+	at java.desktop/java.awt.Component.dispatchEventImpl(Component.java:5001)
+	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2324)
+	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4833)
+	at java.desktop/java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948)
+	at java.desktop/java.awt.LightweightDispatcher.processMouseEvent(Container.java:4575)
+	at java.desktop/java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516)
+	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2310)
+	at java.desktop/java.awt.Window.dispatchEventImpl(Window.java:2780)
+	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4833)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:722)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:716)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:97)
+	at java.desktop/java.awt.EventQueue$5.run(EventQueue.java:746)
+	at java.desktop/java.awt.EventQueue$5.run(EventQueue.java:744)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:743)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+
+[2026-03-19 15:50:41] [ERROR] 数据库连接失败：No suitable driver found for jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 15:53:46] [INFO] 数据库驱动加载成功！
+[2026-03-19 15:53:46] [ERROR] 数据库连接失败：Access denied for user 'root'@'localhost' (using password: NO)
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 16:12:22] [INFO] 数据库驱动加载成功！
+[2026-03-19 16:12:22] [ERROR] 数据库连接失败：Access denied for user 'root'@'localhost' (using password: NO)
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 16:17:26] [ERROR] 数据库连接失败：Access denied for user 'root'@'localhost' (using password: NO)
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 16:20:09] [INFO] 数据库驱动加载成功！
+[2026-03-19 16:20:09] [ERROR] 数据库连接失败：Access denied for user 'root'@'localhost' (using password: YES)
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 16:22:24] [INFO] 数据库驱动加载成功！
+[2026-03-19 16:22:24] [ERROR] 数据库连接失败：Access denied for user 'root'@'localhost' (using password: NO)
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 16:24:07] [INFO] 数据库驱动加载成功！
+[2026-03-19 16:24:08] [ERROR] 数据库连接失败：Unknown database 'rural_water_db'
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 16:29:20] [INFO] 数据库驱动加载成功！
+[2026-03-19 16:35:51] [INFO] 数据库驱动加载成功！
+[2026-03-19 16:38:51] [INFO] 新用户注册：111
+[2026-03-19 16:39:00] [INFO] 数据库产品：MySQL 版本：8.0.43

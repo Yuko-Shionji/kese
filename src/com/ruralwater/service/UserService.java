@@ -133,6 +133,43 @@ public class UserService {
     }
     
     /**
+     * 根据用户名查询用户（用于注册时检查重名）
+     */
+    public User findByUsername(String username) throws Exception {
+        if (username == null || username.trim().isEmpty()) {
+            return null;
+        }
+        return userDAO.findByUsername(username);
+    }
+    
+    /**
+     * 用户注册（新用户注册）
+     */
+    public int register(User user) throws Exception {
+        if (user == null) {
+            throw new IllegalArgumentException("用户信息不能为空");
+        }
+        if (user.getUsername() == null || user.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("用户名不能为空");
+        }
+        if (user.getPassword() == null || user.getPassword().length() < 6) {
+            throw new IllegalArgumentException("密码长度不能少于 6 位");
+        }
+        
+        SimpleLogger.info("新用户注册：" + user.getUsername());
+        
+        // 检查用户名是否已存在
+        User existUser = userDAO.findByUsername(user.getUsername());
+        if (existUser != null) {
+            throw new IllegalArgumentException("用户名已存在");
+        }
+        
+        // 密码加密存储
+        user.setPassword(encryptPassword(user.getPassword()));
+        return userDAO.insert(user);
+    }
+    
+    /**
      * 密码加密（MD5）
      * @param password 原始密码
      * @return 加密后的密码

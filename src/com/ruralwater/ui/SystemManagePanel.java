@@ -4,6 +4,7 @@ import com.ruralwater.entity.User;
 import com.ruralwater.service.UserService;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 
 /**
@@ -206,7 +207,7 @@ class UserManageDialog extends JDialog {
     }
     
     private void doAdd() {
-        AddUserDialog dialog = new AddUserDialog(this);
+        AddUserDialog dialog = new AddUserDialog(this, currentUser);
         dialog.setVisible(true);
         if (dialog.isAdded()) {
             loadData();
@@ -270,9 +271,11 @@ class UserManageDialog extends JDialog {
  */
 class AddUserDialog extends JDialog {
     private boolean added = false;
+    private User currentUser;
     
-    public AddUserDialog(JDialog owner) {
+    public AddUserDialog(JDialog owner, User user) {
         super(owner, "新增用户", true);
+        this.currentUser = user;
         initUI();
     }
     
