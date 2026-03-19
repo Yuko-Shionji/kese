@@ -2,9 +2,14 @@ package com.ruralwater.service;
 
 import com.ruralwater.dao.UserDAO;
 import com.ruralwater.entity.User;
+import com.ruralwater.util.SimpleLogger;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * 用户服务层（业务逻辑层）
+ * 增强版：添加密码加密和增强的验证
  */
 public class UserService {
     
@@ -21,7 +26,11 @@ public class UserService {
             throw new IllegalArgumentException("密码不能为空");
         }
         
-        return userDAO.login(username, password);
+        SimpleLogger.debug("用户登录尝试：" + username);
+        
+        // 密码加密后验证
+        String encryptedPassword = encryptPassword(password);
+        return userDAO.login(username, encryptedPassword);
     }
     
     /**
@@ -35,18 +44,25 @@ public class UserService {
             throw new IllegalArgumentException("新密码长度不能少于 6 位");
         }
         
+        SimpleLogger.info("用户修改密码：ID=" + userId);
+        
         // 验证旧密码
         User user = userDAO.findById(userId);
         if (user == null) {
             throw new IllegalArgumentException("用户不存在");
         }
         
-        // 这里简化处理，实际应该加密存储
-        // 实际项目中应该使用 MD5 或 BCrypt 等加密算法
+        // 验证旧密码是否正确
+        String encryptedOldPassword = encryptPassword(oldPassword);
+        if (!encryptedOldPassword.equals(user.getPassword())) {
+            throw new IllegalArgumentException("旧密码错误");
+        }
         
-        // 更新密码
-        user.setPassword(newPassword);
+        // 更新密码（加密存储）
+        user.setPassword(encryptPassword(newPassword));
         userDAO.update(user);
+        
+        SimpleLogger.info("用户密码修改成功：ID=" + userId);
     }
     
     /**
@@ -63,13 +79,19 @@ public class UserService {
             throw new IllegalArgumentException("密码长度不能少于 6 位");
         }
         
+        SimpleLogger.info("管理员 " + operatorUsername + " 添加新用户：" + user.getUsername());
+        
         // 检查用户名是否已存在
         User existUser = userDAO.findByUsername(user.getUsername());
         if (existUser != null) {
             throw new IllegalArgumentException("用户名已存在");
         }
         
+        // 密码加密存储
+        user.setPassword(encryptPassword(user.getPassword()));
         userDAO.insert(user);
+        
+        SimpleLogger.info("用户添加成功：" + user.getUsername());
     }
     
     /**
@@ -106,6 +128,28 @@ public class UserService {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("用户 ID 无效");
         }
+        SimpleLogger.info("删除用户：ID=" + userId);
         userDAO.delete(userId);
+    }
+    
+    /**
+     * 密码加密（MD5）
+     * @param password 原始密码
+     * @return 加密后的密码
+     */
+    private String encryptPassword(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(password.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            SimpleLogger.error("MD5 加密算法不可用", e);
+            // 降级处理：返回原文（仅用于测试环境）
+            return password;
+        }
     }
 }

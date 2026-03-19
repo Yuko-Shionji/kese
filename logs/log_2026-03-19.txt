@@ -1,0 +1,58 @@
+[2026-03-19 15:32:20] [WARN] 这是一条警告
+[2026-03-19 15:32:20] [ERROR] 这是一条错误信息
+[2026-03-19 15:32:20] [INFO] 这是一条信息
+[2026-03-19 15:32:20] [ERROR] MySQL 驱动加载失败：com.mysql.jdbc.Driver
+	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:525)
+	at java.base/java.lang.Class.forName0(Native Method)
+	at java.base/java.lang.Class.forName(Class.java:375)
+	at com.ruralwater.util.DBUtil.<clinit>(DBUtil.java:30)
+	at com.ruralwater.OptimizationTest.testDBConnection(OptimizationTest.java:44)
+	at com.ruralwater.OptimizationTest.main(OptimizationTest.java:18)
+
+[2026-03-19 15:32:20] [ERROR] 数据库连接失败：No suitable driver found for jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 15:32:20] [ERROR] 数据库连接测试失败：No suitable driver found for jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:706)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:229)
+	at com.ruralwater.util.DBUtil.getConnection(DBUtil.java:95)
+	at com.ruralwater.util.DBUtil.testConnection(DBUtil.java:109)
+	at com.ruralwater.OptimizationTest.testDBConnection(OptimizationTest.java:44)
+	at com.ruralwater.OptimizationTest.main(OptimizationTest.java:18)
+
+[2026-03-19 15:32:43] [WARN] 这是一条警告
+[2026-03-19 15:32:43] [ERROR] 这是一条错误信息
+[2026-03-19 15:32:43] [INFO] 这是一条信息
+[2026-03-19 15:32:43] [INFO] 数据库驱动加载成功！
+[2026-03-19 15:32:43] [ERROR] 数据库连接失败：Access denied for user 'root'@'localhost' (using password: NO)
+URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
+Username: root
+[2026-03-19 15:32:43] [ERROR] 数据库连接测试失败：Access denied for user 'root'@'localhost' (using password: NO)
+	at com.mysql.jdbc.SQLError.createSQLException(SQLError.java:965)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3978)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:3914)
+	at com.mysql.jdbc.MysqlIO.checkErrorPacket(MysqlIO.java:871)
+	at com.mysql.jdbc.MysqlIO.proceedHandshakeWithPluggableAuthentication(MysqlIO.java:1714)
+	at com.mysql.jdbc.MysqlIO.doHandshake(MysqlIO.java:1224)
+	at com.mysql.jdbc.ConnectionImpl.coreConnect(ConnectionImpl.java:2199)
+	at com.mysql.jdbc.ConnectionImpl.connectOneTryOnly(ConnectionImpl.java:2230)
+	at com.mysql.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:2025)
+	at com.mysql.jdbc.ConnectionImpl.<init>(ConnectionImpl.java:778)
+	at com.mysql.jdbc.JDBC4Connection.<init>(JDBC4Connection.java:47)
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance0(Native Method)
+	at java.base/jdk.internal.reflect.NativeConstructorAccessorImpl.newInstance(NativeConstructorAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.base/java.lang.reflect.Constructor.newInstanceWithCaller(Constructor.java:499)
+	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:480)
+	at com.mysql.jdbc.Util.handleNewInstance(Util.java:425)
+	at com.mysql.jdbc.ConnectionImpl.getInstance(ConnectionImpl.java:386)
+	at com.mysql.jdbc.NonRegisteringDriver.connect(NonRegisteringDriver.java:330)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:681)
+	at java.sql/java.sql.DriverManager.getConnection(DriverManager.java:229)
+	at com.ruralwater.util.DBUtil.getConnection(DBUtil.java:95)
+	at com.ruralwater.util.DBUtil.testConnection(DBUtil.java:109)
+	at com.ruralwater.OptimizationTest.testDBConnection(OptimizationTest.java:44)
+	at com.ruralwater.OptimizationTest.main(OptimizationTest.java:18)
+

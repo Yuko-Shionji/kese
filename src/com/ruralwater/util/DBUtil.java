@@ -7,6 +7,7 @@ import java.util.Properties;
 /**
  * 数据库连接工具类（原生 JDBC）
  * 支持配置文件加载和连接池管理
+ * 增强版：添加日志记录和错误处理
  */
 public class DBUtil {
     
@@ -27,10 +28,9 @@ public class DBUtil {
         try {
             // 加载 MySQL 驱动
             Class.forName(DRIVER != null ? DRIVER : "com.mysql.jdbc.Driver");
-            System.out.println("数据库驱动加载成功！");
+            SimpleLogger.info("数据库驱动加载成功！");
         } catch (ClassNotFoundException e) {
-            System.err.println("MySQL 驱动加载失败：" + e.getMessage());
-            e.printStackTrace();
+            SimpleLogger.error("MySQL 驱动加载失败：" + e.getMessage(), e);
         }
     }
     
@@ -66,13 +66,13 @@ public class DBUtil {
                 }
                 
                 input.close();
-                System.out.println("数据库配置加载成功！");
+                SimpleLogger.debug("数据库配置加载成功！URL: " + URL);
             } else {
                 // 使用默认配置
                 useDefaultConfig();
             }
         } catch (Exception e) {
-            System.err.println("配置文件加载失败，使用默认配置：" + e.getMessage());
+            SimpleLogger.warn("配置文件加载失败，使用默认配置：" + e.getMessage());
             useDefaultConfig();
         }
     }
@@ -93,12 +93,10 @@ public class DBUtil {
     public static Connection getConnection() throws SQLException {
         try {
             Connection conn = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-            System.out.println("数据库连接成功！");
+            SimpleLogger.debug("数据库连接创建成功");
             return conn;
         } catch (SQLException e) {
-            System.err.println("数据库连接失败：" + e.getMessage());
-            System.err.println("URL: " + URL);
-            System.err.println("Username: " + USERNAME);
+            SimpleLogger.error("数据库连接失败：" + e.getMessage() + "\nURL: " + URL + "\nUsername: " + USERNAME);
             throw e;
         }
     }
@@ -111,15 +109,14 @@ public class DBUtil {
             Connection conn = getConnection();
             if (conn != null) {
                 DatabaseMetaData metaData = conn.getMetaData();
-                System.out.println("数据库产品：" + metaData.getDatabaseProductName());
-                System.out.println("数据库版本：" + metaData.getDatabaseProductVersion());
-                System.out.println("驱动版本：" + metaData.getDriverVersion());
+                SimpleLogger.info("数据库产品：" + metaData.getDatabaseProductName() + 
+                                 " 版本：" + metaData.getDatabaseProductVersion());
                 close(conn, null);
                 return true;
             }
             return false;
         } catch (Exception e) {
-            System.err.println("数据库连接测试失败：" + e.getMessage());
+            SimpleLogger.error("数据库连接测试失败：" + e.getMessage(), e);
             return false;
         }
     }
