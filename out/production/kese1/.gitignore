@@ -1,0 +1,13 @@
+## Git 忽略文件
+*.class
+*.jar
+*.log
+*.iml
+.idea/
+.vscode/
+bin/
+target/
+build/
+dist/
+*.bak
+*.swp
