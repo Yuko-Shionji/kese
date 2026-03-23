@@ -444,6 +444,19 @@ public class MainFrame extends JFrame {
      * 更新状态栏
      */
     public void updateStatus(String message) {
-        statusLabel.setText(message);
+        if (statusLabel != null) {
+            SwingUtilities.invokeLater(() -> statusLabel.setText(message));
+        }
+    }
+    
+    /**
+     * 安全地获取 MainFrame 实例
+     */
+    public static MainFrame getMainFrame(Component component) {
+        Window window = SwingUtilities.getWindowAncestor(component);
+        if (window instanceof MainFrame) {
+            return (MainFrame) window;
+        }
+        return null;
     }
 }

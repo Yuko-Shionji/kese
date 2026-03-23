@@ -130,3 +130,6 @@ Username: root
 URL: jdbc:mysql://localhost:3306/rural_water_db?useSSL=false&characterEncoding=utf8
 Username: root
 [2026-03-19 16:29:20] [INFO] 数据库驱动加载成功！
+[2026-03-19 16:35:51] [INFO] 数据库驱动加载成功！
+[2026-03-19 16:38:51] [INFO] 新用户注册：111
+[2026-03-19 16:39:00] [INFO] 数据库产品：MySQL 版本：8.0.43

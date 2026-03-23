@@ -124,7 +124,10 @@ public class WarningPanel extends JPanel {
                 null, null, null, null, 1, 100);
             updateTable(warnings);
             int count = warnings.size();
-            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("加载完成，共 " + count + " 条预警信息");
+            MainFrame mainFrame = MainFrame.getMainFrame(this);
+            if (mainFrame != null) {
+                mainFrame.updateStatus("加载完成，共 " + count + " 条预警信息");
+            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "加载数据失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
@@ -202,7 +205,10 @@ public class WarningPanel extends JPanel {
             updateTable(warnings);
             
             int count = warnings.size();
-            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("查询完成，共找到 " + count + " 条预警");
+            MainFrame mainFrame = MainFrame.getMainFrame(this);
+            if (mainFrame != null) {
+                mainFrame.updateStatus("查询完成，共找到 " + count + " 条预警");
+            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "查询失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
@@ -223,14 +229,19 @@ public class WarningPanel extends JPanel {
             return;
         }
         
-        HandleWarningDialog dialog = new HandleWarningDialog((Frame) SwingUtilities.getWindowAncestor(this), 
-                                                              warningId, currentUser);
-        dialog.setVisible(true);
-        
-        if (dialog.isHandled()) {
-            JOptionPane.showMessageDialog(this, "处理成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
-            loadData();
-            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("处理了预警信息 #" + warningId);
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            HandleWarningDialog dialog = new HandleWarningDialog(owner, warningId, currentUser);
+            dialog.setVisible(true);
+            
+            if (dialog.isHandled()) {
+                JOptionPane.showMessageDialog(this, "处理成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                MainFrame mainFrame = MainFrame.getMainFrame(this);
+                if (mainFrame != null) {
+                    mainFrame.updateStatus("处理了预警信息 #" + warningId);
+                }
+            }
         }
     }
 }

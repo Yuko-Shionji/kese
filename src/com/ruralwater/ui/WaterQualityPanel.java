@@ -245,7 +245,10 @@ public class WaterQualityPanel extends JPanel {
             updateTable(records);
             
             int count = records.size();
-            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("查询完成，共找到 " + count + " 条记录");
+            MainFrame mainFrame = MainFrame.getMainFrame(this);
+            if (mainFrame != null) {
+                mainFrame.updateStatus("查询完成，共找到 " + count + " 条记录");
+            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "查询失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
@@ -260,13 +263,19 @@ public class WaterQualityPanel extends JPanel {
             return;
         }
         
-        AddRecordDialog dialog = new AddRecordDialog((Frame) SwingUtilities.getWindowAncestor(this), currentUser);
-        dialog.setVisible(true);
-        
-        if (dialog.isAdded()) {
-            JOptionPane.showMessageDialog(this, "添加成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
-            loadData();
-            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("添加了新的水质检测记录");
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            AddRecordDialog dialog = new AddRecordDialog(owner, currentUser);
+            dialog.setVisible(true);
+            
+            if (dialog.isAdded()) {
+                JOptionPane.showMessageDialog(this, "添加成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                MainFrame mainFrame = MainFrame.getMainFrame(this);
+                if (mainFrame != null) {
+                    mainFrame.updateStatus("添加了新的水质检测记录");
+                }
+            }
         }
     }
     
@@ -283,8 +292,11 @@ public class WaterQualityPanel extends JPanel {
         Integer recordId = (Integer) tableModel.getValueAt(selectedRow, 0);
         try {
             WaterQualityRecord record = qualityService.getRecordById(recordId);
-            RecordDetailDialog dialog = new RecordDetailDialog((Frame) SwingUtilities.getWindowAncestor(this), record);
-            dialog.setVisible(true);
+            Frame owner = MainFrame.getMainFrame(this);
+            if (owner != null) {
+                RecordDetailDialog dialog = new RecordDetailDialog(owner, record);
+                dialog.setVisible(true);
+            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "查看详情失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
@@ -308,13 +320,19 @@ public class WaterQualityPanel extends JPanel {
             return;
         }
         
-        ApproveDialog dialog = new ApproveDialog((Frame) SwingUtilities.getWindowAncestor(this), recordId, currentUser);
-        dialog.setVisible(true);
-        
-        if (dialog.isApproved()) {
-            JOptionPane.showMessageDialog(this, "审核成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
-            loadData();
-            ((MainFrame) SwingUtilities.getWindowAncestor(this)).updateStatus("审核了水质检测记录 #" + recordId);
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            ApproveDialog dialog = new ApproveDialog(owner, recordId, currentUser);
+            dialog.setVisible(true);
+            
+            if (dialog.isApproved()) {
+                JOptionPane.showMessageDialog(this, "审核成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                MainFrame mainFrame = MainFrame.getMainFrame(this);
+                if (mainFrame != null) {
+                    mainFrame.updateStatus("审核了水质检测记录 #" + recordId);
+                }
+            }
         }
     }
 }

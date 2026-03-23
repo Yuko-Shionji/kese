@@ -32,20 +32,20 @@ public class SystemManagePanel extends JPanel {
         buttonPanel.add(userManageBtn);
         
         JButton regionManageBtn = createStyledButton("区域管理", "管理行政区域");
-        regionManageBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "区域管理开发中..."));
+        regionManageBtn.addActionListener(e -> openRegionManagePanel());
         buttonPanel.add(regionManageBtn);
         
         JButton sourceManageBtn = createStyledButton("水源管理", "管理水源地信息");
-        sourceManageBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "水源管理开发中..."));
+        sourceManageBtn.addActionListener(e -> openWaterSourcePanel());
         buttonPanel.add(sourceManageBtn);
         
         JButton standardManageBtn = createStyledButton("检测标准管理", "管理水质检测标准");
-        standardManageBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "检测标准管理开发中..."));
+        standardManageBtn.addActionListener(e -> openStandardManagePanel());
         buttonPanel.add(standardManageBtn);
         
-        JButton logManageBtn = createStyledButton("系统日志", "查看系统操作日志");
-        logManageBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "系统日志开发中..."));
-        buttonPanel.add(logManageBtn);
+        JButton equipmentManageBtn = createStyledButton("设备管理", "管理水厂设备");
+        equipmentManageBtn.addActionListener(e -> openEquipmentPanel());
+        buttonPanel.add(equipmentManageBtn);
         
         JButton dataInitBtn = createStyledButton("数据初始化", "重新生成测试数据");
         dataInitBtn.addActionListener(e -> initData());
@@ -99,8 +99,83 @@ public class SystemManagePanel extends JPanel {
      * 打开用户管理对话框
      */
     private void openUserManageDialog() {
-        UserManageDialog dialog = new UserManageDialog((Frame) SwingUtilities.getWindowAncestor(this), currentUser);
-        dialog.setVisible(true);
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            UserManageDialog dialog = new UserManageDialog(owner, currentUser);
+            dialog.setVisible(true);
+        }
+    }
+    
+    /**
+     * 打开区域管理面板
+     */
+    private void openRegionManagePanel() {
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            JDialog dialog = new JDialog(owner, "区域管理", true);
+            dialog.setSize(900, 600);
+            dialog.setLocationRelativeTo(owner);
+            dialog.setLayout(new BorderLayout());
+            
+            RegionManagePanel panel = new RegionManagePanel(currentUser);
+            dialog.add(panel);
+            
+            dialog.setVisible(true);
+        }
+    }
+    
+    /**
+     * 打开水源管理面板
+     */
+    private void openWaterSourcePanel() {
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            JDialog dialog = new JDialog(owner, "水源管理", true);
+            dialog.setSize(900, 600);
+            dialog.setLocationRelativeTo(owner);
+            dialog.setLayout(new BorderLayout());
+            
+            WaterSourcePanel panel = new WaterSourcePanel(currentUser);
+            dialog.add(panel);
+            
+            dialog.setVisible(true);
+        }
+    }
+    
+    /**
+     * 打开检测标准管理面板
+     */
+    private void openStandardManagePanel() {
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            JDialog dialog = new JDialog(owner, "检测标准管理", true);
+            dialog.setSize(900, 600);
+            dialog.setLocationRelativeTo(owner);
+            dialog.setLayout(new BorderLayout());
+            
+            StandardManagePanel panel = new StandardManagePanel(currentUser);
+            dialog.add(panel);
+            
+            dialog.setVisible(true);
+        }
+    }
+    
+    /**
+     * 打开设备管理面板
+     */
+    private void openEquipmentPanel() {
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            JDialog dialog = new JDialog(owner, "设备管理", true);
+            dialog.setSize(900, 600);
+            dialog.setLocationRelativeTo(owner);
+            dialog.setLayout(new BorderLayout());
+            
+            EquipmentPanel panel = new EquipmentPanel(currentUser);
+            dialog.add(panel);
+            
+            dialog.setVisible(true);
+        }
     }
     
     /**

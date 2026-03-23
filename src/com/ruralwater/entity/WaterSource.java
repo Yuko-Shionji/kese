@@ -20,6 +20,9 @@ public class WaterSource implements Serializable {
     private Integer status;
     private String createTime;
     
+    // 关联字段
+    private String regionName;
+    
     public WaterSource() {}
     
     public WaterSource(Integer sourceId, String sourceName, String sourceType) {
@@ -58,6 +61,9 @@ public class WaterSource implements Serializable {
     
     public String getCreateTime() { return createTime; }
     public void setCreateTime(String createTime) { this.createTime = createTime; }
+    
+    public String getRegionName() { return regionName; }
+    public void setRegionName(String regionName) { this.regionName = regionName; }
     
     @Override
     public String toString() {
