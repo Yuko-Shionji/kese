@@ -27,6 +27,13 @@ public class WaterQualityStandardService {
     }
     
     /**
+     * 获取所有标准（包括未激活的）
+     */
+    public List<WaterQualityStandard> findAll() throws Exception {
+        return standardDAO.findAll();
+    }
+    
+    /**
      * 关键字搜索标准
      */
     public List<WaterQualityStandard> searchStandards(String keyword) throws Exception {

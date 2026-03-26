@@ -170,7 +170,20 @@ public class WaterPlantPanel extends JPanel {
             return;
         }
         
-        JOptionPane.showMessageDialog(this, "新增功能开发中...", "提示", JOptionPane.INFORMATION_MESSAGE);
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            AddWaterPlantDialog dialog = new AddWaterPlantDialog(owner, currentUser);
+            dialog.setVisible(true);
+            
+            if (dialog.isAdded()) {
+                JOptionPane.showMessageDialog(this, "添加成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                MainFrame mainFrame = MainFrame.getMainFrame(this);
+                if (mainFrame != null) {
+                    mainFrame.updateStatus("添加了新水厂");
+                }
+            }
+        }
     }
     
     /**
@@ -188,7 +201,21 @@ public class WaterPlantPanel extends JPanel {
             return;
         }
         
-        JOptionPane.showMessageDialog(this, "编辑功能开发中...", "提示", JOptionPane.INFORMATION_MESSAGE);
+        Integer plantId = (Integer) tableModel.getValueAt(selectedRow, 0);
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            EditWaterPlantDialog dialog = new EditWaterPlantDialog(owner, plantId, currentUser);
+            dialog.setVisible(true);
+            
+            if (dialog.isEdited()) {
+                JOptionPane.showMessageDialog(this, "编辑成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                MainFrame mainFrame = MainFrame.getMainFrame(this);
+                if (mainFrame != null) {
+                    mainFrame.updateStatus("编辑了水厂 #" + plantId);
+                }
+            }
+        }
     }
     
     /**
@@ -218,5 +245,398 @@ public class WaterPlantPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "删除失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+}
+
+/**
+ * 新增水厂对话框
+ */
+class AddWaterPlantDialog extends JDialog {
+    private boolean added = false;
+    private User currentUser;
+    
+    public AddWaterPlantDialog(Frame owner, User user) {
+        super(owner, "新增水厂", true);
+        this.currentUser = user;
+        initUI();
+    }
+    
+    private void initUI() {
+        setSize(600, 500);
+        setLocationRelativeTo(getOwner());
+        setLayout(new BorderLayout());
+        
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // 水厂名称
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("水厂名称："), gbc);
+        JTextField nameField = new JTextField(25);
+        gbc.gridx = 1; gbc.gridy = 0;
+        formPanel.add(nameField, gbc);
+        
+        // 水厂编码
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("水厂编码："), gbc);
+        JTextField codeField = new JTextField(25);
+        gbc.gridx = 1; gbc.gridy = 1;
+        formPanel.add(codeField, gbc);
+        
+        // 所属区域
+        gbc.gridx = 0; gbc.gridy = 2;
+        formPanel.add(new JLabel("所属区域："), gbc);
+        JComboBox<String> regionCombo = new JComboBox<>();
+        try {
+            com.ruralwater.service.RegionService regionService = new com.ruralwater.service.RegionService();
+            // 只查询省份级别的区域
+            java.util.List<com.ruralwater.entity.Region> provinces = regionService.getAllProvinces();
+            System.out.println("查询到 " + provinces.size() + " 个省份");
+            for (com.ruralwater.entity.Region province : provinces) {
+                System.out.println("  - " + province.getRegionName());
+                regionCombo.addItem(province.getRegionName());
+            }
+            if (provinces.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "数据库中没有省份数据，请先执行 init_provinces.sql 初始化脚本", "提示", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "加载省份失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+        gbc.gridx = 1; gbc.gridy = 2;
+        formPanel.add(regionCombo, gbc);
+        
+        // 水源
+        gbc.gridx = 0; gbc.gridy = 3;
+        formPanel.add(new JLabel("水源："), gbc);
+        JTextField sourceField = new JTextField(25);
+        gbc.gridx = 1; gbc.gridy = 3;
+        formPanel.add(sourceField, gbc);
+        
+        // 地址
+        gbc.gridx = 0; gbc.gridy = 4;
+        formPanel.add(new JLabel("地址："), gbc);
+        JTextField addressField = new JTextField(25);
+        gbc.gridx = 1; gbc.gridy = 4;
+        formPanel.add(addressField, gbc);
+        
+        // 设计规模
+        gbc.gridx = 0; gbc.gridy = 5;
+        formPanel.add(new JLabel("设计规模（万吨/日）："), gbc);
+        JTextField capacityField = new JTextField(25);
+        gbc.gridx = 1; gbc.gridy = 5;
+        formPanel.add(capacityField, gbc);
+        
+        // 服务人口
+        gbc.gridx = 0; gbc.gridy = 6;
+        formPanel.add(new JLabel("服务人口（人）："), gbc);
+        JTextField populationField = new JTextField(25);
+        gbc.gridx = 1; gbc.gridy = 6;
+        formPanel.add(populationField, gbc);
+        
+        // 联系人
+        gbc.gridx = 0; gbc.gridy = 7;
+        formPanel.add(new JLabel("联系人："), gbc);
+        JTextField contactField = new JTextField(25);
+        gbc.gridx = 1; gbc.gridy = 7;
+        formPanel.add(contactField, gbc);
+        
+        // 联系电话
+        gbc.gridx = 0; gbc.gridy = 8;
+        formPanel.add(new JLabel("联系电话："), gbc);
+        JTextField phoneField = new JTextField(25);
+        gbc.gridx = 1; gbc.gridy = 8;
+        formPanel.add(phoneField, gbc);
+        
+        // 状态
+        gbc.gridx = 0; gbc.gridy = 9;
+        formPanel.add(new JLabel("状态："), gbc);
+        JComboBox<String> statusCombo = new JComboBox<>();
+        statusCombo.addItem("正常");
+        statusCombo.addItem("停用");
+        gbc.gridx = 1; gbc.gridy = 9;
+        formPanel.add(statusCombo, gbc);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton confirmBtn = new JButton("确定");
+        confirmBtn.addActionListener(e -> {
+            try {
+                String selectedStatus = (String) statusCombo.getSelectedItem();
+                int status = "正常".equals(selectedStatus) ? 1 : 0;
+                
+                WaterPlant plant = new WaterPlant();
+                plant.setPlantName(nameField.getText().trim());
+                plant.setPlantCode(codeField.getText().trim());
+                
+                // 设置 regionId
+                String selectedRegion = (String) regionCombo.getSelectedItem();
+                if (selectedRegion != null) {
+                    com.ruralwater.service.RegionService regionService = new com.ruralwater.service.RegionService();
+                    java.util.List<com.ruralwater.entity.Region> provinces = null;
+                    try {
+                        provinces = regionService.getAllProvinces();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                    if (provinces != null) {
+                        for (com.ruralwater.entity.Region province : provinces) {
+                            if (province.getRegionName().equals(selectedRegion)) {
+                                plant.setRegionId(province.getRegionId());
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                plant.setSourceName(sourceField.getText().trim());
+                plant.setAddress(addressField.getText().trim());
+                
+                String capacity = capacityField.getText().trim();
+                if (!capacity.isEmpty()) {
+                    plant.setDesignCapacity(new java.math.BigDecimal(capacity));
+                }
+                
+                String population = populationField.getText().trim();
+                if (!population.isEmpty()) {
+                    plant.setServicePopulation(Integer.parseInt(population));
+                }
+                
+                plant.setContactPerson(contactField.getText().trim());
+                plant.setContactPhone(phoneField.getText().trim());
+                plant.setStatus(status);
+                
+                WaterPlantService plantService = new WaterPlantService();
+                plantService.addWaterPlant(plant);
+                
+                added = true;
+                dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "添加失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonPanel.add(confirmBtn);
+        
+        JButton cancelBtn = new JButton("取消");
+        cancelBtn.addActionListener(e -> dispose());
+        buttonPanel.add(cancelBtn);
+        
+        add(formPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    public boolean isAdded() {
+        return added;
+    }
+}
+
+/**
+ * 编辑水厂对话框
+ */
+class EditWaterPlantDialog extends JDialog {
+    private boolean edited = false;
+    private WaterPlant plant;
+    
+    public EditWaterPlantDialog(Frame owner, Integer plantId, User currentUser) {
+        super(owner, "编辑水厂 #" + plantId, true);
+        initUI(plantId);
+    }
+    
+    private void initUI(Integer plantId) {
+        setSize(600, 500);
+        setLocationRelativeTo(getOwner());
+        setLayout(new BorderLayout());
+        
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        try {
+            WaterPlantService plantService = new WaterPlantService();
+            plant = plantService.getPlantById(plantId);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        if (plant == null) {
+            JOptionPane.showMessageDialog(this, "未找到水厂信息", "错误", JOptionPane.ERROR_MESSAGE);
+            dispose();
+            return;
+        }
+        
+        // 水厂名称
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("水厂名称："), gbc);
+        JTextField nameField = new JTextField(25);
+        nameField.setText(plant.getPlantName());
+        gbc.gridx = 1; gbc.gridy = 0;
+        formPanel.add(nameField, gbc);
+        
+        // 水厂编码
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("水厂编码："), gbc);
+        JTextField codeField = new JTextField(25);
+        codeField.setText(plant.getPlantCode());
+        gbc.gridx = 1; gbc.gridy = 1;
+        formPanel.add(codeField, gbc);
+        
+        // 所属区域
+        gbc.gridx = 0; gbc.gridy = 2;
+        formPanel.add(new JLabel("所属区域："), gbc);
+        JComboBox<String> regionCombo = new JComboBox<>();
+        try {
+            com.ruralwater.service.RegionService regionService = new com.ruralwater.service.RegionService();
+            // 只查询省份级别的区域
+            java.util.List<com.ruralwater.entity.Region> provinces = regionService.getAllProvinces();
+            System.out.println("编辑时查询到 " + provinces.size() + " 个省份");
+            int selectedIndex = -1;
+            for (int i = 0; i < provinces.size(); i++) {
+                com.ruralwater.entity.Region province = provinces.get(i);
+                regionCombo.addItem(province.getRegionName());
+                if (plant.getRegionId() != null && plant.getRegionId().equals(province.getRegionId())) {
+                    selectedIndex = i;
+                }
+            }
+            if (selectedIndex >= 0) {
+                regionCombo.setSelectedIndex(selectedIndex);
+            }
+            if (provinces.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "数据库中没有省份数据，请先执行 init_provinces.sql 初始化脚本", "提示", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "加载省份失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+        gbc.gridx = 1; gbc.gridy = 2;
+        formPanel.add(regionCombo, gbc);
+        
+        // 水源
+        gbc.gridx = 0; gbc.gridy = 3;
+        formPanel.add(new JLabel("水源："), gbc);
+        JTextField sourceField = new JTextField(25);
+        sourceField.setText(plant.getSourceName() != null ? plant.getSourceName() : "");
+        gbc.gridx = 1; gbc.gridy = 3;
+        formPanel.add(sourceField, gbc);
+        
+        // 地址
+        gbc.gridx = 0; gbc.gridy = 4;
+        formPanel.add(new JLabel("地址："), gbc);
+        JTextField addressField = new JTextField(25);
+        addressField.setText(plant.getAddress() != null ? plant.getAddress() : "");
+        gbc.gridx = 1; gbc.gridy = 4;
+        formPanel.add(addressField, gbc);
+        
+        // 设计规模
+        gbc.gridx = 0; gbc.gridy = 5;
+        formPanel.add(new JLabel("设计规模（万吨/日）："), gbc);
+        JTextField capacityField = new JTextField(25);
+        capacityField.setText(plant.getDesignCapacity() != null ? String.valueOf(plant.getDesignCapacity()) : "");
+        gbc.gridx = 1; gbc.gridy = 5;
+        formPanel.add(capacityField, gbc);
+        
+        // 服务人口
+        gbc.gridx = 0; gbc.gridy = 6;
+        formPanel.add(new JLabel("服务人口（人）："), gbc);
+        JTextField populationField = new JTextField(25);
+        populationField.setText(plant.getServicePopulation() != null ? String.valueOf(plant.getServicePopulation()) : "");
+        gbc.gridx = 1; gbc.gridy = 6;
+        formPanel.add(populationField, gbc);
+        
+        // 联系人
+        gbc.gridx = 0; gbc.gridy = 7;
+        formPanel.add(new JLabel("联系人："), gbc);
+        JTextField contactField = new JTextField(25);
+        contactField.setText(plant.getContactPerson() != null ? plant.getContactPerson() : "");
+        gbc.gridx = 1; gbc.gridy = 7;
+        formPanel.add(contactField, gbc);
+        
+        // 联系电话
+        gbc.gridx = 0; gbc.gridy = 8;
+        formPanel.add(new JLabel("联系电话："), gbc);
+        JTextField phoneField = new JTextField(25);
+        phoneField.setText(plant.getContactPhone() != null ? plant.getContactPhone() : "");
+        gbc.gridx = 1; gbc.gridy = 8;
+        formPanel.add(phoneField, gbc);
+        
+        // 状态
+        gbc.gridx = 0; gbc.gridy = 9;
+        formPanel.add(new JLabel("状态："), gbc);
+        JComboBox<String> statusCombo = new JComboBox<>();
+        statusCombo.addItem("正常");
+        statusCombo.addItem("停用");
+        statusCombo.setSelectedIndex(plant.getStatus() == 1 ? 0 : 1);
+        gbc.gridx = 1; gbc.gridy = 9;
+        formPanel.add(statusCombo, gbc);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton confirmBtn = new JButton("确定");
+        confirmBtn.addActionListener(e -> {
+            try {
+                String selectedStatus = (String) statusCombo.getSelectedItem();
+                int status = "正常".equals(selectedStatus) ? 1 : 0;
+                
+                plant.setPlantName(nameField.getText().trim());
+                plant.setPlantCode(codeField.getText().trim());
+                
+                // 设置 regionId
+                String selectedRegion = (String) regionCombo.getSelectedItem();
+                if (selectedRegion != null) {
+                    com.ruralwater.service.RegionService regionService = new com.ruralwater.service.RegionService();
+                    java.util.List<com.ruralwater.entity.Region> provinces = null;
+                    try {
+                        provinces = regionService.getAllProvinces();
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                    if (provinces != null) {
+                        for (com.ruralwater.entity.Region province : provinces) {
+                            if (province.getRegionName().equals(selectedRegion)) {
+                                plant.setRegionId(province.getRegionId());
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                plant.setSourceName(sourceField.getText().trim());
+                plant.setAddress(addressField.getText().trim());
+                
+                String capacity = capacityField.getText().trim();
+                if (!capacity.isEmpty()) {
+                    plant.setDesignCapacity(new java.math.BigDecimal(capacity));
+                }
+                
+                String population = populationField.getText().trim();
+                if (!population.isEmpty()) {
+                    plant.setServicePopulation(Integer.parseInt(population));
+                }
+                
+                plant.setContactPerson(contactField.getText().trim());
+                plant.setContactPhone(phoneField.getText().trim());
+                plant.setStatus(status);
+                
+                WaterPlantService plantService = new WaterPlantService();
+                plantService.updateWaterPlant(plant);
+                
+                edited = true;
+                dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "更新失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonPanel.add(confirmBtn);
+        
+        JButton cancelBtn = new JButton("取消");
+        cancelBtn.addActionListener(e -> dispose());
+        buttonPanel.add(cancelBtn);
+        
+        add(formPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    public boolean isEdited() {
+        return edited;
     }
 }

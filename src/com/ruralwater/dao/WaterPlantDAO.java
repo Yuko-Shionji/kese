@@ -42,8 +42,8 @@ public class WaterPlantDAO implements BaseDAO<WaterPlant> {
                 plant.setPlantId(rs.getInt("plant_id"));
                 plant.setPlantName(rs.getString("plant_name"));
                 plant.setPlantCode(rs.getString("plant_code"));
-                plant.setRegionId(rs.getInt("region_id"));
-                plant.setSourceId(rs.getInt("source_id"));
+                plant.setRegionId((Integer) rs.getObject("region_id"));
+                plant.setSourceId((Integer) rs.getObject("source_id"));
                 plant.setAddress(rs.getString("address"));
                 plant.setDesignCapacity(rs.getBigDecimal("design_capacity"));
                 plant.setActualCapacity(rs.getBigDecimal("actual_capacity"));
@@ -93,8 +93,8 @@ public class WaterPlantDAO implements BaseDAO<WaterPlant> {
                 plant.setPlantId(rs.getInt("plant_id"));
                 plant.setPlantName(rs.getString("plant_name"));
                 plant.setPlantCode(rs.getString("plant_code"));
-                plant.setRegionId(rs.getInt("region_id"));
-                plant.setSourceId(rs.getInt("source_id"));
+                plant.setRegionId((Integer) rs.getObject("region_id"));
+                plant.setSourceId((Integer) rs.getObject("source_id"));
                 plant.setAddress(rs.getString("address"));
                 plant.setDesignCapacity(rs.getBigDecimal("design_capacity"));
                 plant.setActualCapacity(rs.getBigDecimal("actual_capacity"));
@@ -126,8 +126,8 @@ public class WaterPlantDAO implements BaseDAO<WaterPlant> {
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, plant.getPlantName());
             pstmt.setString(2, plant.getPlantCode());
-            pstmt.setInt(3, plant.getRegionId());
-            pstmt.setInt(4, plant.getSourceId());
+            pstmt.setObject(3, plant.getRegionId());
+            pstmt.setObject(4, plant.getSourceId());
             pstmt.setString(5, plant.getAddress());
             pstmt.setBigDecimal(6, plant.getDesignCapacity());
             pstmt.setInt(7, plant.getServicePopulation());
@@ -153,8 +153,8 @@ public class WaterPlantDAO implements BaseDAO<WaterPlant> {
             pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, plant.getPlantName());
             pstmt.setString(2, plant.getPlantCode());
-            pstmt.setInt(3, plant.getRegionId());
-            pstmt.setInt(4, plant.getSourceId());
+            pstmt.setObject(3, plant.getRegionId());
+            pstmt.setObject(4, plant.getSourceId());
             pstmt.setString(5, plant.getAddress());
             pstmt.setBigDecimal(6, plant.getDesignCapacity());
             pstmt.setBigDecimal(7, plant.getActualCapacity());
@@ -210,8 +210,8 @@ public class WaterPlantDAO implements BaseDAO<WaterPlant> {
                 plant.setPlantId(rs.getInt("plant_id"));
                 plant.setPlantName(rs.getString("plant_name"));
                 plant.setPlantCode(rs.getString("plant_code"));
-                plant.setRegionId(rs.getInt("region_id"));
-                plant.setSourceId(rs.getInt("source_id"));
+                plant.setRegionId((Integer) rs.getObject("region_id"));
+                plant.setSourceId((Integer) rs.getObject("source_id"));
                 plant.setAddress(rs.getString("address"));
                 plant.setDesignCapacity(rs.getBigDecimal("design_capacity"));
                 plant.setActualCapacity(rs.getBigDecimal("actual_capacity"));
@@ -253,8 +253,8 @@ public class WaterPlantDAO implements BaseDAO<WaterPlant> {
                 plant.setPlantId(rs.getInt("plant_id"));
                 plant.setPlantName(rs.getString("plant_name"));
                 plant.setPlantCode(rs.getString("plant_code"));
-                plant.setRegionId(rs.getInt("region_id"));
-                plant.setSourceId(rs.getInt("source_id"));
+                plant.setRegionId((Integer) rs.getObject("region_id"));
+                plant.setSourceId((Integer) rs.getObject("source_id"));
                 plant.setAddress(rs.getString("address"));
                 plant.setDesignCapacity(rs.getBigDecimal("design_capacity"));
                 plant.setActualCapacity(rs.getBigDecimal("actual_capacity"));
@@ -299,8 +299,8 @@ public class WaterPlantDAO implements BaseDAO<WaterPlant> {
                 plant.setPlantId(rs.getInt("plant_id"));
                 plant.setPlantName(rs.getString("plant_name"));
                 plant.setPlantCode(rs.getString("plant_code"));
-                plant.setRegionId(rs.getInt("region_id"));
-                plant.setSourceId(rs.getInt("source_id"));
+                plant.setRegionId((Integer) rs.getObject("region_id"));
+                plant.setSourceId((Integer) rs.getObject("source_id"));
                 plant.setAddress(rs.getString("address"));
                 plant.setDesignCapacity(rs.getBigDecimal("design_capacity"));
                 plant.setActualCapacity(rs.getBigDecimal("actual_capacity"));

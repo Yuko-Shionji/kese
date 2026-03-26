@@ -69,6 +69,8 @@ public class WaterQualityService {
      * 添加检测记录（带事务处理）
      */
     public void addRecord(WaterQualityRecord record, List<WaterQualityDetail> details) throws Exception {
+        System.out.println("[WaterQualityService] 开始添加记录...");
+        
         if (record == null) {
             throw new IllegalArgumentException("检测记录不能为空");
         }
@@ -79,14 +81,20 @@ public class WaterQualityService {
             throw new IllegalArgumentException("检测详情不能为空");
         }
         
+        System.out.println("[WaterQualityService] 验证通过，准备开启事务...");
+        
         // 开启事务处理
         java.sql.Connection conn = null;
         try {
             conn = com.ruralwater.util.DBUtil.getConnection();
+            System.out.println("[WaterQualityService] 数据库连接获取成功");
+            
             com.ruralwater.util.DBUtil.beginTransaction(conn);
+            System.out.println("[WaterQualityService] 事务开启成功");
             
             // 插入主记录
             int recordResult = recordDAO.insertWithConnection(record, conn);
+            System.out.println("[WaterQualityService] 主记录插入成功，影响行数：" + recordResult);
             
             // 获取生成的记录 ID
             java.sql.Statement stmt = conn.createStatement();
@@ -94,6 +102,7 @@ public class WaterQualityService {
             Integer recordId = null;
             if (rs.next()) {
                 recordId = rs.getInt(1);
+                System.out.println("[WaterQualityService] 生成的记录 ID: " + recordId);
             }
             rs.close();
             stmt.close();
@@ -104,16 +113,22 @@ public class WaterQualityService {
                     detail.setRecordId(recordId);
                 }
                 
+                System.out.println("[WaterQualityService] 准备批量插入详情...");
                 // 批量插入详情
                 detailService.addDetails(details);
+                System.out.println("[WaterQualityService] 详情插入成功");
             }
             
             // 提交事务
             com.ruralwater.util.DBUtil.commit(conn);
+            System.out.println("[WaterQualityService] 事务提交成功");
         } catch (Exception e) {
+            System.err.println("[WaterQualityService] 发生异常：" + e.getMessage());
+            e.printStackTrace();
             // 回滚事务
             if (conn != null) {
                 com.ruralwater.util.DBUtil.rollback(conn);
+                System.out.println("[WaterQualityService] 事务已回滚");
             }
             throw e;
         } finally {
@@ -193,5 +208,25 @@ public class WaterQualityService {
      */
     public List<WaterQualityRecord> getRecentRecords(int count) throws Exception {
         return recordDAO.findByPage(1, count);
+    }
+    
+    /**
+     * 删除检测记录
+     */
+    public void deleteRecord(Integer recordId) throws Exception {
+        if (recordId == null || recordId <= 0) {
+            throw new IllegalArgumentException("记录 ID 无效");
+        }
+        recordDAO.delete(recordId);
+    }
+    
+    /**
+     * 更新检测记录
+     */
+    public void updateRecord(WaterQualityRecord record) throws Exception {
+        if (record == null || record.getRecordId() == null || record.getRecordId() <= 0) {
+            throw new IllegalArgumentException("记录信息无效");
+        }
+        recordDAO.update(record);
     }
 }

@@ -3,6 +3,7 @@ package com.ruralwater.ui;
 import com.ruralwater.entity.User;
 import com.ruralwater.entity.WaterQualityRecord;
 import com.ruralwater.service.*;
+import com.ruralwater.util.UIStyles;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -31,6 +32,16 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         
+        // 设置窗口图标
+        try {
+            ImageIcon icon = new ImageIcon("icon.png");
+            if (icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+                setIconImage(icon.getImage());
+            }
+        } catch (Exception e) {
+            // 忽略图标加载失败
+        }
+        
         // 菜单栏
         JMenuBar menuBar = createMenuBar();
         setJMenuBar(menuBar);
@@ -40,17 +51,17 @@ public class MainFrame extends JFrame {
         
         // 顶部欢迎栏
         JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
-        topPanel.setBackground(new Color(41, 128, 185));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
+        topPanel.setBackground(UIStyles.PRIMARY_COLOR);
         
         JLabel welcomeLabel = new JLabel("欢迎，" + currentUser.getRealName() + " (" + 
                                          getRoleName(currentUser.getRole()) + ")");
-        welcomeLabel.setFont(new Font("微软雅黑", Font.BOLD, 16));
+        welcomeLabel.setFont(UIStyles.FONT_HEADING);
         welcomeLabel.setForeground(Color.WHITE);
         topPanel.add(welcomeLabel, BorderLayout.WEST);
         
-        statusLabel = new JLabel("系统就绪");
-        statusLabel.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        statusLabel = new JLabel("系统就绪 | " + new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date()));
+        statusLabel.setFont(UIStyles.FONT_SMALL);
         statusLabel.setForeground(Color.WHITE);
         topPanel.add(statusLabel, BorderLayout.EAST);
         
@@ -58,7 +69,8 @@ public class MainFrame extends JFrame {
         
         // 选项卡面板
         tabbedPane = new JTabbedPane(JTabbedPane.TOP);
-        tabbedPane.setFont(new Font("微软雅黑", Font.PLAIN, 14));
+        tabbedPane.setFont(UIStyles.FONT_BODY);
+        tabbedPane.setBackground(UIStyles.BACKGROUND_LIGHT);
         
         // 添加各个功能模块
         addFunctionTabs();
@@ -67,11 +79,15 @@ public class MainFrame extends JFrame {
         
         // 状态栏
         JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        statusBar.setBorder(BorderFactory.createEtchedBorder());
+        statusBar.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(UIStyles.BORDER_COLOR),
+            BorderFactory.createEmptyBorder(8, 15, 8, 15)
+        ));
+        statusBar.setBackground(UIStyles.BACKGROUND_LIGHT);
         
-        JLabel infoLabel = new JLabel("技术支持：农村饮水安全监测系统 v1.0");
-        infoLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        infoLabel.setForeground(Color.GRAY);
+        JLabel infoLabel = new JLabel("© 2026 农村饮水安全监测系统 v2.0 | 技术支持：系统管理员");
+        infoLabel.setFont(UIStyles.FONT_SMALL);
+        infoLabel.setForeground(UIStyles.TEXT_SECONDARY);
         statusBar.add(infoLabel);
         
         mainPanel.add(statusBar, BorderLayout.SOUTH);
@@ -131,24 +147,28 @@ public class MainFrame extends JFrame {
     private void addFunctionTabs() {
         // 首页仪表板
         JPanel dashboardPanel = createDashboardPanel();
-        tabbedPane.addTab("首页", dashboardPanel);
+        tabbedPane.addTab("📊 首页", dashboardPanel);
+        
+        // 统计分析
+        StatisticsPanel statsPanel = new StatisticsPanel();
+        tabbedPane.addTab("📈 统计分析", statsPanel);
         
         // 水厂管理
         WaterPlantPanel plantPanel = new WaterPlantPanel(currentUser);
-        tabbedPane.addTab("水厂管理", plantPanel);
+        tabbedPane.addTab("💧 水厂管理", plantPanel);
         
         // 水质检测
         WaterQualityPanel qualityPanel = new WaterQualityPanel(currentUser);
-        tabbedPane.addTab("水质检测", qualityPanel);
+        tabbedPane.addTab("🔬 水质检测", qualityPanel);
         
         // 预警信息
         WarningPanel warningPanel = new WarningPanel(currentUser);
-        tabbedPane.addTab("预警信息", warningPanel);
+        tabbedPane.addTab("⚠️ 预警信息", warningPanel);
         
         // 系统管理（仅管理员可见）
         if ("admin".equals(currentUser.getRole())) {
             SystemManagePanel sysPanel = new SystemManagePanel(currentUser);
-            tabbedPane.addTab("系统管理", sysPanel);
+            tabbedPane.addTab("⚙️ 系统管理", sysPanel);
         }
     }
     
@@ -296,19 +316,15 @@ public class MainFrame extends JFrame {
      * 创建统计卡片
      */
     private JPanel createStatCard(String title, String value, Color color) {
-        JPanel card = new JPanel(new BorderLayout(5, 5));
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(color, 2),
-            BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
-        card.setBackground(color.brighter());
+        JPanel card = UIStyles.createCardPanel(color.brighter());
+        card.setLayout(new BorderLayout(5, 5));
         
         JLabel titleLabel = new JLabel(title, SwingConstants.CENTER);
-        titleLabel.setFont(new Font("微软雅黑", Font.BOLD, 14));
+        titleLabel.setFont(UIStyles.FONT_HEADING);
         titleLabel.setForeground(color.darker());
         
         JLabel valueLabel = new JLabel(value, SwingConstants.CENTER);
-        valueLabel.setFont(new Font("微软雅黑", Font.BOLD, 28));
+        valueLabel.setFont(new Font("微软雅黑", Font.BOLD, 32));
         valueLabel.setForeground(color.darker());
         
         card.add(titleLabel, BorderLayout.NORTH);
@@ -345,8 +361,10 @@ public class MainFrame extends JFrame {
         };
         
         JTable table = new JTable(tableModel);
-        table.setFont(new Font("微软雅黑", Font.PLAIN, 13));
-        table.setRowHeight(28);
+        table.setFont(UIStyles.FONT_SMALL);
+        table.setRowHeight(32);
+        table.setSelectionBackground(UIStyles.PRIMARY_LIGHT);
+        table.setGridColor(UIStyles.BORDER_COLOR);
         
         try {
             WaterQualityService qualityService = new WaterQualityService();
@@ -366,7 +384,17 @@ public class MainFrame extends JFrame {
         }
         
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("最近检测记录"));
+        scrollPane.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(UIStyles.BORDER_COLOR),
+                "最近检测记录",
+                javax.swing.border.TitledBorder.LEFT,
+                javax.swing.border.TitledBorder.TOP,
+                UIStyles.FONT_HEADING,
+                UIStyles.TEXT_PRIMARY
+            ),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
         
         return scrollPane;
     }
@@ -377,7 +405,7 @@ public class MainFrame extends JFrame {
     private JPanel createSystemInfoPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
         
@@ -412,11 +440,22 @@ public class MainFrame extends JFrame {
         panel.add(createInfoLabel("数据库状态:"), gbc);
         gbc.gridx = 1; gbc.gridy = row;
         boolean connected = com.ruralwater.util.DBUtil.testConnection();
-        JLabel statusLabel = createInfoValue(connected ? "已连接" : "未连接");
-        statusLabel.setForeground(connected ? new Color(39, 174, 96) : Color.RED);
+        JLabel statusLabel = createInfoValue(connected ? "✓ 已连接" : "✗ 未连接");
+        statusLabel.setForeground(connected ? UIStyles.SUCCESS_COLOR : UIStyles.DANGER_COLOR);
+        statusLabel.setFont(new Font("微软雅黑", Font.BOLD, 13));
         panel.add(statusLabel, gbc);
         
-        panel.setBorder(BorderFactory.createTitledBorder("系统信息"));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(UIStyles.BORDER_COLOR),
+                "系统信息",
+                javax.swing.border.TitledBorder.LEFT,
+                javax.swing.border.TitledBorder.TOP,
+                UIStyles.FONT_HEADING,
+                UIStyles.TEXT_PRIMARY
+            ),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
         
         return panel;
     }

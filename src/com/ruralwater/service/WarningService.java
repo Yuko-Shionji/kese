@@ -94,4 +94,14 @@ public class WarningService {
     public int getProcessedWarnings() throws Exception {
         return warningDAO.getCountByCondition(null, null, "processed", null);
     }
+    
+    /**
+     * 更新预警信息
+     */
+    public void updateWarning(Warning warning) throws Exception {
+        if (warning == null || warning.getWarningId() == null || warning.getWarningId() <= 0) {
+            throw new IllegalArgumentException("预警信息无效");
+        }
+        warningDAO.update(warning);
+    }
 }

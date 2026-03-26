@@ -181,20 +181,20 @@ public class WarningDAO implements BaseDAO<Warning> {
     
     @Override
     public int insert(Warning warning) throws Exception {
-        String sql = "INSERT INTO warnings(record_id, plant_id, warning_type, " +
-                    "warning_level, title, content) VALUES(?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO warnings(plant_id, warning_type, " +
+                    "warning_level, title, content, status) VALUES(?, ?, ?, ?, ?, ?)";
         Connection conn = null;
         PreparedStatement pstmt = null;
         
         try {
             conn = DBUtil.getConnection();
             pstmt = conn.prepareStatement(sql);
-            pstmt.setObject(1, warning.getRecordId());
-            pstmt.setInt(2, warning.getPlantId());
-            pstmt.setString(3, warning.getWarningType());
-            pstmt.setString(4, warning.getWarningLevel());
-            pstmt.setString(5, warning.getTitle());
-            pstmt.setString(6, warning.getContent());
+            pstmt.setInt(1, warning.getPlantId());
+            pstmt.setString(2, warning.getWarningType());
+            pstmt.setString(3, warning.getWarningLevel());
+            pstmt.setString(4, warning.getTitle());
+            pstmt.setString(5, warning.getContent());
+            pstmt.setString(6, warning.getStatus());
             
             return pstmt.executeUpdate();
         } finally {

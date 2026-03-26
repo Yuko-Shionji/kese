@@ -2,6 +2,7 @@ package com.ruralwater.ui;
 
 import com.ruralwater.entity.User;
 import com.ruralwater.service.UserService;
+import com.ruralwater.util.UIStyles;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,14 +28,25 @@ public class LoginFrame extends JFrame {
     
     private void initUI() {
         setTitle("农村饮水安全监测管理系统 - 用户登录");
-        setSize(450, 360);
+        setSize(500, 400);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
         
+        // 设置窗口图标
+        try {
+            ImageIcon icon = new ImageIcon("icon.png");
+            if (icon.getImageLoadStatus() == MediaTracker.COMPLETE) {
+                setIconImage(icon.getImage());
+            }
+        } catch (Exception e) {
+            // 忽略图标加载失败
+        }
+        
         // 主面板
         JPanel mainPanel = new JPanel(new GridBagLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(30, 50, 30, 50));
+        mainPanel.setBackground(Color.WHITE);
         
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
@@ -42,46 +54,49 @@ public class LoginFrame extends JFrame {
         
         // 标题
         JLabel titleLabel = new JLabel("农村饮水安全监测管理系统", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("宋体", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(41, 128, 185));
+        titleLabel.setFont(UIStyles.FONT_TITLE);
+        titleLabel.setForeground(UIStyles.PRIMARY_COLOR);
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         mainPanel.add(titleLabel, gbc);
         
-        // 用户名标签
-        JLabel usernameLabel = new JLabel("用户名：");
-        usernameLabel.setFont(new Font("宋体", Font.PLAIN, 14));
-        usernameLabel.setForeground(Color.BLACK);
+        // 副标题
+        JLabel subTitleLabel = new JLabel("Rural Drinking Water Safety Monitoring System", SwingConstants.CENTER);
+        subTitleLabel.setFont(new Font("微软雅黑", Font.ITALIC, 14));
+        subTitleLabel.setForeground(UIStyles.TEXT_SECONDARY);
         gbc.gridx = 0;
         gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        mainPanel.add(subTitleLabel, gbc);
+        
+        // 用户名标签
+        JLabel usernameLabel = new JLabel("用户名：");
+        usernameLabel.setFont(UIStyles.FONT_BODY);
+        usernameLabel.setForeground(UIStyles.TEXT_PRIMARY);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
         gbc.gridwidth = 1;
         mainPanel.add(usernameLabel, gbc);
         
         // 用户名输入框
-        usernameField = new JTextField(20);
-        usernameField.setFont(new Font("宋体", Font.PLAIN, 14));
-        usernameField.setForeground(Color.BLACK);
-        usernameField.setPreferredSize(new Dimension(250, 35));
+        usernameField = UIStyles.createTextField(20);
         gbc.gridx = 1;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         mainPanel.add(usernameField, gbc);
         
         // 密码标签
         JLabel passwordLabel = new JLabel("密 码：");
-        passwordLabel.setFont(new Font("宋体", Font.PLAIN, 14));
-        passwordLabel.setForeground(Color.BLACK);
+        passwordLabel.setFont(UIStyles.FONT_BODY);
+        passwordLabel.setForeground(UIStyles.TEXT_PRIMARY);
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         mainPanel.add(passwordLabel, gbc);
         
         // 密码输入框
-        passwordField = new JPasswordField(20);
-        passwordField.setFont(new Font("宋体", Font.PLAIN, 14));
-        passwordField.setForeground(Color.BLACK);
-        passwordField.setPreferredSize(new Dimension(250, 35));
+        passwordField = UIStyles.createPasswordField(20);
         gbc.gridx = 1;
-        gbc.gridy = 2;
+        gbc.gridy = 3;
         mainPanel.add(passwordField, gbc);
         
         // 按钮面板
@@ -89,34 +104,30 @@ public class LoginFrame extends JFrame {
         buttonPanel.setOpaque(false);
         
         // 登录按钮
-        loginButton = new JButton("登录");
-        loginButton.setFont(new Font("宋体", Font.PLAIN, 14));
-        loginButton.setPreferredSize(new Dimension(100, 35));
-        loginButton.setBackground(new Color(41, 128, 185));
-        loginButton.setForeground(Color.BLACK);
-        loginButton.setFocusPainted(false);
+        loginButton = UIStyles.createPrimaryButton("登录");
+        loginButton.setPreferredSize(new Dimension(120, 40));
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.anchor = GridBagConstraints.CENTER;
         mainPanel.add(loginButton, gbc);
         
         // 取消按钮
         cancelButton = new JButton("退出");
-        cancelButton.setFont(new Font("宋体", Font.PLAIN, 14));
-        cancelButton.setPreferredSize(new Dimension(100, 35));
-        cancelButton.setBackground(new Color(189, 195, 199));
-        cancelButton.setForeground(Color.BLACK);
+        cancelButton.setFont(UIStyles.FONT_BODY);
+        cancelButton.setBackground(UIStyles.TEXT_SECONDARY);
+        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setPreferredSize(new Dimension(120, 40));
         cancelButton.setFocusPainted(false);
         gbc.gridx = 1;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         mainPanel.add(cancelButton, gbc);
         
         // 提示信息
-        JLabel tipLabel = new JLabel("默认账号：admin / admin123", SwingConstants.CENTER);
-        tipLabel.setFont(new Font("宋体", Font.ITALIC, 12));
-        tipLabel.setForeground(Color.GRAY);
+        JLabel tipLabel = new JLabel("💡 默认账号：admin / admin123", SwingConstants.CENTER);
+        tipLabel.setFont(UIStyles.FONT_SMALL);
+        tipLabel.setForeground(UIStyles.TEXT_SECONDARY);
         gbc.gridx = 0;
-        gbc.gridy = 4;
+        gbc.gridy = 5;
         gbc.gridwidth = 2;
         mainPanel.add(tipLabel, gbc);
         
@@ -124,15 +135,16 @@ public class LoginFrame extends JFrame {
         JPanel linkPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         linkPanel.setOpaque(false);
         registerButton = new JButton("没有账号？立即注册");
-        registerButton.setFont(new Font("宋体", Font.PLAIN, 12));
-        registerButton.setPreferredSize(new Dimension(150, 30));
-        registerButton.setBackground(new Color(52, 152, 219));
-        registerButton.setForeground(Color.BLACK);
+        registerButton.setFont(UIStyles.FONT_SMALL);
+        registerButton.setPreferredSize(new Dimension(160, 35));
+        registerButton.setBackground(UIStyles.PRIMARY_DARK);
+        registerButton.setForeground(Color.WHITE);
         registerButton.setFocusPainted(false);
         registerButton.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
+        registerButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
         linkPanel.add(registerButton);
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 2;
         mainPanel.add(linkPanel, gbc);
         

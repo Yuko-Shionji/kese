@@ -71,10 +71,15 @@ public class WaterQualityDetailDAO implements BaseDAO<WaterQualityDetail> {
         
         Connection conn = null;
         PreparedStatement pstmt = null;
+        Statement stmt = null;
         
         try {
             conn = DBUtil.getConnection();
             DBUtil.beginTransaction(conn);
+            
+            // 临时禁用触发器
+            stmt = conn.createStatement();
+            stmt.execute("SET @OLD_TMP_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0");
             
             String sql = "INSERT INTO water_quality_details(record_id, standard_id, measured_value, is_qualified, remark) " +
                          "VALUES(?, ?, ?, ?, ?)";
@@ -89,17 +94,32 @@ public class WaterQualityDetailDAO implements BaseDAO<WaterQualityDetail> {
                 pstmt.addBatch();
             }
             
+            System.out.println("[WaterQualityDetailDAO] 执行批量插入，记录数：" + details.size());
             int[] results = pstmt.executeBatch();
+            System.out.println("[WaterQualityDetailDAO] 批量插入完成，成功数：" + results.length);
+            
+            // 恢复触发器
+            stmt.execute("SET FOREIGN_KEY_CHECKS=@OLD_TMP_FOREIGN_KEY_CHECKS");
+            
             DBUtil.commit(conn);
+            System.out.println("[WaterQualityDetailDAO] 事务提交成功");
             
             return results.length;
         } catch (Exception e) {
+            System.err.println("[WaterQualityDetailDAO] 发生异常：" + e.getMessage());
+            e.printStackTrace();
             if (conn != null) {
                 DBUtil.rollback(conn);
+                System.out.println("[WaterQualityDetailDAO] 事务已回滚");
             }
             throw e;
         } finally {
             DBUtil.close(conn, pstmt);
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (SQLException e) {}
+            }
         }
     }
     

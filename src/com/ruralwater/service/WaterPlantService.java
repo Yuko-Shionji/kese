@@ -105,4 +105,34 @@ public class WaterPlantService {
     public int getTotalCount() throws Exception {
         return plantDAO.getCount();
     }
+    
+    /**
+     * 添加水厂（简化版，不需要区域验证）
+     */
+    public void addWaterPlant(WaterPlant plant) throws Exception {
+        if (plant == null) {
+            throw new IllegalArgumentException("水厂信息不能为空");
+        }
+        if (plant.getPlantName() == null || plant.getPlantName().trim().isEmpty()) {
+            throw new IllegalArgumentException("水厂名称不能为空");
+        }
+        plantDAO.insert(plant);
+    }
+    
+    /**
+     * 更新水厂信息（简化版）
+     */
+    public void updateWaterPlant(WaterPlant plant) throws Exception {
+        if (plant == null || plant.getPlantId() == null || plant.getPlantId() <= 0) {
+            throw new IllegalArgumentException("水厂信息无效");
+        }
+        plantDAO.update(plant);
+    }
+    
+    /**
+     * 获取所有水厂列表
+     */
+    public List<WaterPlant> getAllWaterPlants() throws Exception {
+        return plantDAO.findAll();
+    }
 }

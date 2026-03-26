@@ -1,6 +1,7 @@
 package com.ruralwater;
 
 import com.ruralwater.ui.LoginFrame;
+import com.ruralwater.util.UIStyles;
 
 import javax.swing.*;
 
@@ -10,12 +11,8 @@ import javax.swing.*;
 public class MainApp {
     
     public static void main(String[] args) {
-        // 设置系统外观
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // 应用现代化主题
+        UIStyles.applyModernTheme();
         
         // 使用 EventQueue 确保线程安全
         SwingUtilities.invokeLater(new Runnable() {

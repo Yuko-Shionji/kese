@@ -24,6 +24,8 @@ public class WaterQualityPanel extends JPanel {
     private JComboBox<String> conclusionCombo;
     private JButton searchButton;
     private JButton addButton;
+    private JButton editButton;
+    private JButton deleteButton;
     private JButton viewButton;
     private JButton approveButton;
     private JButton refreshButton;
@@ -98,6 +100,14 @@ public class WaterQualityPanel extends JPanel {
         viewButton = new JButton("查看详情");
         viewButton.addActionListener(e -> doView());
         panel.add(viewButton);
+        
+        editButton = new JButton("编辑记录");
+        editButton.addActionListener(e -> doEdit());
+        panel.add(editButton);
+        
+        deleteButton = new JButton("删除记录");
+        deleteButton.addActionListener(e -> doDelete());
+        panel.add(deleteButton);
         
         if ("admin".equals(currentUser.getRole()) || "operator".equals(currentUser.getRole())) {
             approveButton = new JButton("审核");
@@ -335,6 +345,76 @@ public class WaterQualityPanel extends JPanel {
             }
         }
     }
+    
+    /**
+     * 编辑
+     */
+    private void doEdit() {
+        int selectedRow = qualityTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this, "请选择要编辑的记录", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        if (!"admin".equals(currentUser.getRole()) && !"operator".equals(currentUser.getRole())) {
+            JOptionPane.showMessageDialog(this, "权限不足，只有管理员和操作员可以编辑", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Integer recordId = (Integer) tableModel.getValueAt(selectedRow, 0);
+        try {
+            WaterQualityRecord record = qualityService.getRecordById(recordId);
+            Frame owner = MainFrame.getMainFrame(this);
+            if (owner != null) {
+                EditRecordDialog dialog = new EditRecordDialog(owner, record, currentUser);
+                dialog.setVisible(true);
+                
+                if (dialog.isEdited()) {
+                    JOptionPane.showMessageDialog(this, "编辑成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    loadData();
+                    MainFrame mainFrame = MainFrame.getMainFrame(this);
+                    if (mainFrame != null) {
+                        mainFrame.updateStatus("编辑了水质检测记录 #" + recordId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "编辑失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * 删除
+     */
+    private void doDelete() {
+        int selectedRow = qualityTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this, "请选择要删除的记录", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        if (!"admin".equals(currentUser.getRole())) {
+            JOptionPane.showMessageDialog(this, "权限不足，只有管理员可以删除", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Integer recordId = (Integer) tableModel.getValueAt(selectedRow, 0);
+        int result = JOptionPane.showConfirmDialog(this, "确定要删除该记录吗？", "确认删除", 
+                                                    JOptionPane.YES_NO_OPTION);
+        if (result == JOptionPane.YES_OPTION) {
+            try {
+                qualityService.deleteRecord(recordId);
+                JOptionPane.showMessageDialog(this, "删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                MainFrame mainFrame = MainFrame.getMainFrame(this);
+                if (mainFrame != null) {
+                    mainFrame.updateStatus("删除了水质检测记录 #" + recordId);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "删除失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
 }
 
 /**
@@ -348,6 +428,8 @@ class AddRecordDialog extends JDialog {
     private JTextField sampleTimeField;
     private JComboBox<String> conclusionCombo;
     private JTextArea remarkArea;
+    private JTable detailTable;
+    private DefaultTableModel detailTableModel;
     
     public AddRecordDialog(Frame owner, User user) {
         super(owner, "新增水质检测记录", true);
@@ -356,10 +438,11 @@ class AddRecordDialog extends JDialog {
     }
     
     private void initUI() {
-        setSize(500, 400);
+        setSize(900, 700);
         setLocationRelativeTo(getOwner());
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(10, 10));
         
+        // 上部：基本信息表单
         JPanel formPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
@@ -373,7 +456,7 @@ class AddRecordDialog extends JDialog {
             WaterPlantService plantService = new WaterPlantService();
             List<com.ruralwater.entity.WaterPlant> plants = plantService.getPlantsByPage(1, 100);
             for (com.ruralwater.entity.WaterPlant plant : plants) {
-                plantCombo.addItem(plant.getPlantName());
+                plantCombo.addItem(String.valueOf(plant.getPlantId())); // 添加水厂 ID
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -410,11 +493,66 @@ class AddRecordDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = 4;
         formPanel.add(new JLabel("备注："), gbc);
         
-        remarkArea = new JTextArea(5, 20);
+        remarkArea = new JTextArea(3, 20);
         JScrollPane scrollPane = new JScrollPane(remarkArea);
         gbc.gridx = 1; gbc.gridy = 4;
         formPanel.add(scrollPane, gbc);
         
+        // 中部：检测详情表格
+        String[] detailColumns = {"检测项", "单位", "标准值", "实测值", "是否合格"};
+        
+        // 使用 Vector 存储数据以便更好地控制可编辑性
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(detailColumns, 0) {
+            private static final long serialVersionUID = 1L;
+            
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // 只有实测值 (3) 和是否合格 (4) 可编辑
+                return column == 3 || column == 4;
+            }
+            
+            @Override
+            public Class<?> getColumnClass(int column) {
+                if (column == 3) {
+                    return String.class; // 实测值
+                } else if (column == 4) {
+                    return String.class; // 是否合格
+                }
+                return Object.class;
+            }
+        };
+        detailTableModel = model;
+        
+        detailTable = new JTable(detailTableModel);
+        detailTable.setFont(new Font("微软雅黑", Font.PLAIN, 13));
+        detailTable.setRowHeight(28);
+        detailTable.setAutoCreateRowSorter(true);
+        
+        // 加载检测标准（先加载数据再设置编辑器）
+        loadQualityStandards();
+        
+        // 确保表格至少有 5 列
+        if (detailTable.getColumnCount() >= 5) {
+            // 设置实测值列为文本编辑器（列索引 3）
+            JTextField textField = new JTextField();
+            DefaultCellEditor textEditor = new DefaultCellEditor(textField);
+            detailTable.getColumnModel().getColumn(3).setCellEditor(textEditor);
+            
+            // 设置是否合格列为下拉框编辑器（列索引 4）
+            JComboBox<String> qualifiedCombo = new JComboBox<>();
+            qualifiedCombo.addItem("是");
+            qualifiedCombo.addItem("否");
+            DefaultCellEditor comboEditor = new DefaultCellEditor(qualifiedCombo);
+            detailTable.getColumnModel().getColumn(4).setCellEditor(comboEditor);
+        } else {
+            System.err.println("警告：表格列数不足，当前列数：" + detailTable.getColumnCount());
+        }
+        
+        JPanel detailPanel = new JPanel(new BorderLayout());
+        detailPanel.setBorder(BorderFactory.createTitledBorder("检测详情（必填）"));
+        detailPanel.add(new JScrollPane(detailTable), BorderLayout.CENTER);
+        
+        // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton confirmBtn = new JButton("确定");
         confirmBtn.addActionListener(e -> doConfirm());
@@ -424,24 +562,151 @@ class AddRecordDialog extends JDialog {
         cancelBtn.addActionListener(e -> dispose());
         buttonPanel.add(cancelBtn);
         
-        add(formPanel, BorderLayout.CENTER);
+        // 添加到主面板
+        JPanel centerPanel = new JPanel(new BorderLayout(10, 10));
+        centerPanel.add(formPanel, BorderLayout.NORTH);
+        centerPanel.add(detailPanel, BorderLayout.CENTER);
+        
+        add(centerPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    /**
+     * 加载检测标准并填充到表格
+     */
+    private void loadQualityStandards() {
+        try {
+            com.ruralwater.service.WaterQualityStandardService standardService = 
+                new com.ruralwater.service.WaterQualityStandardService();
+            List<com.ruralwater.entity.WaterQualityStandard> standards = standardService.findAll();
+            
+            System.out.println("加载到 " + standards.size() + " 条检测标准");
+            
+            if (standards.isEmpty()) {
+                JOptionPane.showMessageDialog(this, 
+                    "未找到检测标准数据，请先在系统中添加检测标准", 
+                    "警告", 
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            int addedCount = 0;
+            for (com.ruralwater.entity.WaterQualityStandard standard : standards) {
+                if (standard.getIsActive() == 1) { // 只加载启用的标准
+                    Object[] row = {
+                        standard.getItemName(),
+                        standard.getUnit() != null ? standard.getUnit() : "-",
+                        standard.getStandardValue() != null ? standard.getStandardValue().toString() : "-",
+                        "", // 实测值留空，由用户填写
+                        "是" // 默认合格
+                    };
+                    detailTableModel.addRow(row);
+                    System.out.println("添加检测项：" + standard.getItemName());
+                    addedCount++;
+                }
+            }
+            
+            System.out.println("表格行数：" + detailTableModel.getRowCount());
+            System.out.println("实际添加的启用手标准数：" + addedCount);
+            
+            if (detailTableModel.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(this, 
+                    "没有可用的检测标准，请检查数据库中的检测标准数据", 
+                    "错误", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "加载检测标准失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
     }
     
     private void doConfirm() {
         try {
-            String selectedPlant = (String) plantCombo.getSelectedItem();
-            WaterPlantService plantService = new WaterPlantService();
-            List<com.ruralwater.entity.WaterPlant> plants = plantService.searchPlants(selectedPlant);
-            Integer plantId = null;
-            for (com.ruralwater.entity.WaterPlant plant : plants) {
-                if (plant.getPlantName().equals(selectedPlant)) {
-                    plantId = plant.getPlantId();
-                    break;
-                }
+            System.out.println("========== 开始保存检测记录 ==========");
+            
+            // 停止正在进行的单元格编辑，确保数据已提交到 TableModel
+            if (detailTable.isEditing()) {
+                detailTable.getCellEditor().stopCellEditing();
             }
             
-            WaterQualityRecord record = new WaterQualityRecord();
+            // 验证基本信息
+            String selectedPlantId = (String) plantCombo.getSelectedItem();
+            System.out.println("选择的水厂 ID: " + selectedPlantId);
+            
+            if (selectedPlantId == null || selectedPlantId.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "请选择水厂", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            Integer plantId = Integer.parseInt(selectedPlantId.trim());
+            
+            // 验证并收集检测详情
+            java.util.List<com.ruralwater.entity.WaterQualityDetail> details = 
+                new java.util.ArrayList<>();
+            
+            System.out.println("表格总行数：" + detailTableModel.getRowCount());
+            
+            for (int i = 0; i < detailTableModel.getRowCount(); i++) {
+                String itemName = (String) detailTableModel.getValueAt(i, 0);
+                String measuredValueStr = (String) detailTableModel.getValueAt(i, 3);
+                String isQualifiedStr = (String) detailTableModel.getValueAt(i, 4);
+                
+                System.out.println("行" + i + ": 检测项=" + itemName + ", 实测值=" + measuredValueStr + ", 是否合格=" + isQualifiedStr);
+                
+                // 如果实测值为空，跳过该项
+                if (measuredValueStr == null || measuredValueStr.trim().isEmpty()) {
+                    System.out.println("  -> 实测值为空，跳过");
+                    continue;
+                }
+                
+                // 获取标准 ID
+                com.ruralwater.service.WaterQualityStandardService standardService = 
+                    new com.ruralwater.service.WaterQualityStandardService();
+                List<com.ruralwater.entity.WaterQualityStandard> standards = 
+                    standardService.searchStandards(itemName);
+                
+                System.out.println("  -> 找到 " + standards.size() + " 个匹配的标准");
+                
+                Integer standardId = null;
+                for (com.ruralwater.entity.WaterQualityStandard s : standards) {
+                    if (s.getItemName().equals(itemName)) {
+                        standardId = s.getStandardId();
+                        System.out.println("  -> 找到标准 ID: " + standardId);
+                        break;
+                    }
+                }
+                
+                if (standardId == null) {
+                    System.out.println("  -> 未找到标准 ID，跳过");
+                    continue;
+                }
+                
+                // 创建检测详情对象
+                com.ruralwater.entity.WaterQualityDetail detail = 
+                    new com.ruralwater.entity.WaterQualityDetail();
+                detail.setStandardId(standardId);
+                
+                String trimmedValue = measuredValueStr.trim();
+                System.out.println("  -> 实测值字符串：'" + trimmedValue + "'");
+                
+                detail.setMeasuredValue(new java.math.BigDecimal(trimmedValue));
+                detail.setIsQualified("是".equals(isQualifiedStr) ? 1 : 0);
+                
+                details.add(detail);
+                System.out.println("  -> 已添加到详情列表");
+            }
+            
+            System.out.println("最终收集的详情数量：" + details.size());
+            
+            // 验证至少有一个检测详情
+            if (details.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "请至少填写一项检测数据", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            // 创建记录对象
+            com.ruralwater.entity.WaterQualityRecord record = new com.ruralwater.entity.WaterQualityRecord();
             record.setPlantId(plantId);
             record.setSamplePoint(samplePointField.getText().trim());
             record.setSampleTime(sampleTimeField.getText().trim());
@@ -449,13 +714,31 @@ class AddRecordDialog extends JDialog {
             record.setConclusion((String) conclusionCombo.getSelectedItem());
             record.setRemark(remarkArea.getText().trim());
             
-            WaterQualityService qualityService = new WaterQualityService();
-            qualityService.addRecord(record, null); // TODO: 添加检测详情
+            System.out.println("准备保存记录：水厂 ID=" + plantId + ", 详情数量=" + details.size());
             
+            // 保存记录和详情
+            WaterQualityService qualityService = new WaterQualityService();
+            qualityService.addRecord(record, details);
+            
+            System.out.println("保存成功！");
             added = true;
+            JOptionPane.showMessageDialog(this, "添加成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
             dispose();
+        } catch (NumberFormatException ex) {
+            System.err.println("数字格式错误：" + ex.getMessage());
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "实测值格式错误，请输入数字", "错误", JOptionPane.ERROR_MESSAGE);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(this, "添加失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            System.err.println("========== 保存失败 ==========");
+            System.err.println("错误类型：" + ex.getClass().getName());
+            System.err.println("错误信息：" + ex.getMessage());
+            System.err.println("============================");
+            ex.printStackTrace();
+            
+            String errorMsg = "添加失败！\n\n" +
+                            "错误类型：" + ex.getClass().getSimpleName() + "\n" +
+                            "错误信息：" + ex.getMessage();
+            JOptionPane.showMessageDialog(this, errorMsg, "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
     
@@ -648,5 +931,109 @@ class ApproveDialog extends JDialog {
     
     public boolean isApproved() {
         return approved;
+    }
+}
+
+/**
+ * 编辑检测记录对话框
+ */
+class EditRecordDialog extends JDialog {
+    private boolean edited = false;
+    private User currentUser;
+    private WaterQualityRecord record;
+    
+    public EditRecordDialog(Frame owner, WaterQualityRecord record, User user) {
+        super(owner, "编辑检测记录 #" + record.getRecordId(), true);
+        this.currentUser = user;
+        this.record = record;
+        initUI();
+    }
+    
+    private void initUI() {
+        setSize(500, 400);
+        setLocationRelativeTo(getOwner());
+        setLayout(new BorderLayout());
+        
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // 水厂（只读）
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("水厂："), gbc);
+        JTextField plantField = new JTextField(20);
+        plantField.setText(record.getPlantName() != null ? record.getPlantName() : "-");
+        plantField.setEditable(false);
+        gbc.gridx = 1; gbc.gridy = 0;
+        formPanel.add(plantField, gbc);
+        
+        // 采样点
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("采样点："), gbc);
+        JTextField samplePointField = new JTextField(20);
+        samplePointField.setText(record.getSamplePoint() != null ? record.getSamplePoint() : "");
+        gbc.gridx = 1; gbc.gridy = 1;
+        formPanel.add(samplePointField, gbc);
+        
+        // 采样时间
+        gbc.gridx = 0; gbc.gridy = 2;
+        formPanel.add(new JLabel("采样时间："), gbc);
+        JTextField sampleTimeField = new JTextField(20);
+        sampleTimeField.setText(record.getSampleTime() != null ? record.getSampleTime() : "");
+        gbc.gridx = 1; gbc.gridy = 2;
+        formPanel.add(sampleTimeField, gbc);
+        
+        // 检测结论
+        gbc.gridx = 0; gbc.gridy = 3;
+        formPanel.add(new JLabel("检测结论："), gbc);
+        JComboBox<String> conclusionCombo = new JComboBox<>();
+        conclusionCombo.addItem("qualified");
+        conclusionCombo.addItem("unqualified");
+        if (record.getConclusion() != null) {
+            conclusionCombo.setSelectedItem(record.getConclusion());
+        }
+        gbc.gridx = 1; gbc.gridy = 3;
+        formPanel.add(conclusionCombo, gbc);
+        
+        // 备注
+        gbc.gridx = 0; gbc.gridy = 4;
+        formPanel.add(new JLabel("备注："), gbc);
+        JTextArea remarkArea = new JTextArea(5, 20);
+        remarkArea.setText(record.getRemark() != null ? record.getRemark() : "");
+        JScrollPane scrollPane = new JScrollPane(remarkArea);
+        gbc.gridx = 1; gbc.gridy = 4;
+        formPanel.add(scrollPane, gbc);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton confirmBtn = new JButton("确定");
+        confirmBtn.addActionListener(e -> {
+            try {
+                record.setSamplePoint(samplePointField.getText().trim());
+                record.setSampleTime(sampleTimeField.getText().trim());
+                record.setConclusion((String) conclusionCombo.getSelectedItem());
+                record.setRemark(remarkArea.getText().trim());
+                
+                WaterQualityService qualityService = new WaterQualityService();
+                qualityService.updateRecord(record);
+                
+                edited = true;
+                dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "更新失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonPanel.add(confirmBtn);
+        
+        JButton cancelBtn = new JButton("取消");
+        cancelBtn.addActionListener(e -> dispose());
+        buttonPanel.add(cancelBtn);
+        
+        add(formPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    public boolean isEdited() {
+        return edited;
     }
 }

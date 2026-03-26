@@ -2,6 +2,8 @@ package com.ruralwater.ui;
 
 import com.ruralwater.entity.User;
 import com.ruralwater.entity.Warning;
+import com.ruralwater.entity.WaterPlant;
+import com.ruralwater.service.WaterPlantService;
 import com.ruralwater.service.WarningService;
 
 import javax.swing.*;
@@ -21,6 +23,9 @@ public class WarningPanel extends JPanel {
     private JComboBox<String> levelCombo;
     private JComboBox<String> statusCombo;
     private JButton searchButton;
+    private JButton addButton;
+    private JButton editButton;
+    private JButton deleteButton;
     private JButton handleButton;
     private JButton refreshButton;
     
@@ -74,6 +79,20 @@ public class WarningPanel extends JPanel {
         searchButton = new JButton("查询");
         searchButton.addActionListener(e -> doSearch());
         panel.add(searchButton);
+        
+        panel.add(Box.createHorizontalStrut(20));
+        
+        addButton = new JButton("新增预警");
+        addButton.addActionListener(e -> doAdd());
+        panel.add(addButton);
+        
+        editButton = new JButton("编辑预警");
+        editButton.addActionListener(e -> doEdit());
+        panel.add(editButton);
+        
+        deleteButton = new JButton("删除预警");
+        deleteButton.addActionListener(e -> doDelete());
+        panel.add(deleteButton);
         
         panel.add(Box.createHorizontalStrut(20));
         
@@ -244,6 +263,101 @@ public class WarningPanel extends JPanel {
             }
         }
     }
+    
+    /**
+     * 新增
+     */
+    private void doAdd() {
+        if (!"admin".equals(currentUser.getRole()) && !"operator".equals(currentUser.getRole())) {
+            JOptionPane.showMessageDialog(this, "权限不足，只有管理员和操作员可以添加", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Frame owner = MainFrame.getMainFrame(this);
+        if (owner != null) {
+            AddWarningDialog dialog = new AddWarningDialog(owner, currentUser);
+            dialog.setVisible(true);
+            
+            if (dialog.isAdded()) {
+                JOptionPane.showMessageDialog(this, "添加成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                MainFrame mainFrame = MainFrame.getMainFrame(this);
+                if (mainFrame != null) {
+                    mainFrame.updateStatus("添加了新预警信息");
+                }
+            }
+        }
+    }
+    
+    /**
+     * 编辑
+     */
+    private void doEdit() {
+        int selectedRow = warningTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this, "请选择要编辑的预警", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        if (!"admin".equals(currentUser.getRole()) && !"operator".equals(currentUser.getRole())) {
+            JOptionPane.showMessageDialog(this, "权限不足，只有管理员和操作员可以编辑", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Integer warningId = (Integer) tableModel.getValueAt(selectedRow, 0);
+        try {
+            Warning warning = warningService.getWarningById(warningId);
+            Frame owner = MainFrame.getMainFrame(this);
+            if (owner != null) {
+                EditWarningDialog dialog = new EditWarningDialog(owner, warning, currentUser);
+                dialog.setVisible(true);
+                
+                if (dialog.isEdited()) {
+                    JOptionPane.showMessageDialog(this, "编辑成功！", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    loadData();
+                    MainFrame mainFrame = MainFrame.getMainFrame(this);
+                    if (mainFrame != null) {
+                        mainFrame.updateStatus("编辑了预警信息 #" + warningId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "编辑失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    /**
+     * 删除
+     */
+    private void doDelete() {
+        int selectedRow = warningTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this, "请选择要删除的预警", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        if (!"admin".equals(currentUser.getRole())) {
+            JOptionPane.showMessageDialog(this, "权限不足，只有管理员可以删除", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        Integer warningId = (Integer) tableModel.getValueAt(selectedRow, 0);
+        int result = JOptionPane.showConfirmDialog(this, "确定要删除该预警吗？", "确认删除", 
+                                                    JOptionPane.YES_NO_OPTION);
+        if (result == JOptionPane.YES_OPTION) {
+            try {
+                warningService.deleteWarning(warningId);
+                JOptionPane.showMessageDialog(this, "删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadData();
+                MainFrame mainFrame = MainFrame.getMainFrame(this);
+                if (mainFrame != null) {
+                    mainFrame.updateStatus("删除了预警信息 #" + warningId);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "删除失败：" + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
 }
 
 /**
@@ -317,5 +431,265 @@ class HandleWarningDialog extends JDialog {
     
     public boolean isHandled() {
         return handled;
+    }
+}
+
+/**
+ * 新增预警对话框
+ */
+class AddWarningDialog extends JDialog {
+    private boolean added = false;
+    private User currentUser;
+    
+    public AddWarningDialog(Frame owner, User user) {
+        super(owner, "新增预警信息", true);
+        this.currentUser = user;
+        initUI();
+    }
+    
+    private void initUI() {
+        setSize(600, 500);
+        setLocationRelativeTo(getOwner());
+        setLayout(new BorderLayout());
+        
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // 水厂选择
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("水厂："), gbc);
+        JComboBox<Integer> plantCombo = new JComboBox<>();
+        loadWaterPlants(plantCombo);
+        gbc.gridx = 1; gbc.gridy = 0;
+        formPanel.add(plantCombo, gbc);
+        
+        // 预警类型
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("预警类型："), gbc);
+        JComboBox<String> typeCombo = new JComboBox<>();
+        typeCombo.addItem("quality");
+        typeCombo.addItem("equipment");
+        typeCombo.addItem("supply");
+        typeCombo.addItem("other");
+        gbc.gridx = 1; gbc.gridy = 1;
+        formPanel.add(typeCombo, gbc);
+        
+        // 预警级别
+        gbc.gridx = 0; gbc.gridy = 2;
+        formPanel.add(new JLabel("预警级别："), gbc);
+        JComboBox<String> levelCombo = new JComboBox<>();
+        levelCombo.addItem("low");
+        levelCombo.addItem("medium");
+        levelCombo.addItem("high");
+        levelCombo.addItem("critical");
+        gbc.gridx = 1; gbc.gridy = 2;
+        formPanel.add(levelCombo, gbc);
+        
+        // 标题
+        gbc.gridx = 0; gbc.gridy = 3;
+        formPanel.add(new JLabel("标题："), gbc);
+        JTextField titleField = new JTextField(30);
+        gbc.gridx = 1; gbc.gridy = 3;
+        formPanel.add(titleField, gbc);
+        
+        // 内容
+        gbc.gridx = 0; gbc.gridy = 4;
+        formPanel.add(new JLabel("内容："), gbc);
+        JTextArea contentArea = new JTextArea(8, 30);
+        JScrollPane scrollPane = new JScrollPane(contentArea);
+        gbc.gridx = 1; gbc.gridy = 4;
+        formPanel.add(scrollPane, gbc);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton confirmBtn = new JButton("确定");
+        confirmBtn.addActionListener(e -> {
+            try {
+                Integer plantId = (Integer) plantCombo.getSelectedItem();
+                System.out.println("Selected plantId: " + plantId);
+                if (plantId == null || plantId <= 0) {
+                    JOptionPane.showMessageDialog(this, "请选择水厂", "提示", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                String title = titleField.getText().trim();
+                String content = contentArea.getText().trim();
+                
+                if (title.isEmpty() || content.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "标题和内容不能为空", "提示", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                Warning warning = new Warning();
+                warning.setPlantId(plantId);
+                warning.setWarningType((String) typeCombo.getSelectedItem());
+                warning.setWarningLevel((String) levelCombo.getSelectedItem());
+                warning.setTitle(title);
+                warning.setContent(content);
+                warning.setStatus("active");
+                
+                System.out.println("Creating warning with plantId: " + plantId);
+                
+                WarningService warningService = new WarningService();
+                warningService.addWarning(warning);
+                
+                added = true;
+                dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "添加失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        });
+        buttonPanel.add(confirmBtn);
+        
+        JButton cancelBtn = new JButton("取消");
+        cancelBtn.addActionListener(e -> dispose());
+        buttonPanel.add(cancelBtn);
+        
+        add(formPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    public boolean isAdded() {
+        return added;
+    }
+    
+    /**
+     * 加载水厂列表
+     */
+    private void loadWaterPlants(JComboBox<Integer> combo) {
+        try {
+            WaterPlantService plantService = new WaterPlantService();
+            List<WaterPlant> plants = plantService.getAllWaterPlants();
+            
+            combo.removeAllItems();
+            if (plants == null || plants.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "没有可用的水厂信息，请先添加水厂", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            
+            for (WaterPlant plant : plants) {
+                combo.addItem(plant.getPlantId());
+            }
+            
+            // 设置渲染器来直接显示水厂 ID
+            combo.setRenderer(new DefaultListCellRenderer() {
+                @Override
+                public Component getListCellRendererComponent(JList<?> list, Object value, 
+                        int index, boolean isSelected, boolean cellHasFocus) {
+                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                    if (value instanceof Integer) {
+                        setText(value.toString());
+                    }
+                    return this;
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("加载水厂列表失败：" + e.getMessage());
+            // 不弹出错误框，避免阻止对话框显示
+        }
+    }
+}
+
+/**
+ * 编辑预警对话框
+ */
+class EditWarningDialog extends JDialog {
+    private boolean edited = false;
+    private Warning warning;
+    
+    public EditWarningDialog(Frame owner, Warning warning, User currentUser) {
+        super(owner, "编辑预警 #" + warning.getWarningId(), true);
+        this.warning = warning;
+        initUI();
+    }
+    
+    private void initUI() {
+        setSize(600, 450);
+        setLocationRelativeTo(getOwner());
+        setLayout(new BorderLayout());
+        
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // 预警类型
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("预警类型："), gbc);
+        JComboBox<String> typeCombo = new JComboBox<>();
+        typeCombo.addItem("quality");
+        typeCombo.addItem("equipment");
+        typeCombo.addItem("supply");
+        typeCombo.setSelectedItem(warning.getWarningType());
+        gbc.gridx = 1; gbc.gridy = 0;
+        formPanel.add(typeCombo, gbc);
+        
+        // 预警级别
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("预警级别："), gbc);
+        JComboBox<String> levelCombo = new JComboBox<>();
+        levelCombo.addItem("low");
+        levelCombo.addItem("medium");
+        levelCombo.addItem("high");
+        levelCombo.addItem("critical");
+        levelCombo.setSelectedItem(warning.getWarningLevel());
+        gbc.gridx = 1; gbc.gridy = 1;
+        formPanel.add(levelCombo, gbc);
+        
+        // 标题
+        gbc.gridx = 0; gbc.gridy = 2;
+        formPanel.add(new JLabel("标题："), gbc);
+        JTextField titleField = new JTextField(30);
+        titleField.setText(warning.getTitle() != null ? warning.getTitle() : "");
+        gbc.gridx = 1; gbc.gridy = 2;
+        formPanel.add(titleField, gbc);
+        
+        // 内容
+        gbc.gridx = 0; gbc.gridy = 3;
+        formPanel.add(new JLabel("内容："), gbc);
+        JTextArea contentArea = new JTextArea(8, 30);
+        contentArea.setText(warning.getContent() != null ? warning.getContent() : "");
+        JScrollPane scrollPane = new JScrollPane(contentArea);
+        gbc.gridx = 1; gbc.gridy = 3;
+        formPanel.add(scrollPane, gbc);
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton confirmBtn = new JButton("确定");
+        confirmBtn.addActionListener(e -> {
+            try {
+                warning.setWarningType((String) typeCombo.getSelectedItem());
+                warning.setWarningLevel((String) levelCombo.getSelectedItem());
+                warning.setTitle(titleField.getText().trim());
+                warning.setContent(contentArea.getText().trim());
+                
+                if (warning.getTitle().isEmpty() || warning.getContent().isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "标题和内容不能为空", "提示", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                WarningService warningService = new WarningService();
+                warningService.updateWarning(warning);
+                
+                edited = true;
+                dispose();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "更新失败：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        buttonPanel.add(confirmBtn);
+        
+        JButton cancelBtn = new JButton("取消");
+        cancelBtn.addActionListener(e -> dispose());
+        buttonPanel.add(cancelBtn);
+        
+        add(formPanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
+    
+    public boolean isEdited() {
+        return edited;
     }
 }
