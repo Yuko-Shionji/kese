@@ -188,16 +188,16 @@ AFTER INSERT ON water_quality_details
 FOR EACH ROW
 BEGIN
     IF NEW.is_qualified = 0 THEN
-        DECLARE v_record_id INT;
         DECLARE v_plant_id INT;
         DECLARE v_item_name VARCHAR(100);
         
-        SELECT record_id INTO v_record_id FROM water_quality_records WHERE record_id = NEW.record_id;
+        -- 直接从 water_quality_records 获取 plant_id
         SELECT plant_id INTO v_plant_id FROM water_quality_records WHERE record_id = NEW.record_id;
+        -- 从 water_quality_standards 获取 item_name
         SELECT item_name INTO v_item_name FROM water_quality_standards WHERE standard_id = NEW.standard_id;
         
         INSERT INTO warnings (record_id, plant_id, warning_type, warning_level, title, content)
-        VALUES (v_record_id, v_plant_id, 'quality', 'high', 
+        VALUES (NEW.record_id, v_plant_id, 'quality', 'high', 
                 CONCAT('水质检测异常 - ', v_item_name),
                 CONCAT('检测项 "', v_item_name, '" 不合格，测量值：', NEW.measured_value));
     END IF;
